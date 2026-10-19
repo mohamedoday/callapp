@@ -79,8 +79,13 @@ h2{font-size:16px;font-weight:600;color:var(--muted)}
 .cb.end svg{transform:rotate(135deg)}
 .audio-only .vbtn{display:none}
 
-/* incoming */
-#incoming{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:radial-gradient(100% 60% at 50% 30%,#2c2a78 0%,var(--bg) 70%)}
+/* group */
+#groupScreen{gap:20px;max-width:800px;margin:0 auto;width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;width:100%}
+.grid-item{position:relative;aspect-ratio:3/4;background:#000;border-radius:16px;overflow:hidden;border:2px solid var(--line)}
+.grid-item video{width:100%;height:100%;object-fit:cover}
+.grid-item .name-tag{position:absolute;bottom:8px;left:8px;background:#0008;color:#fff;padding:2px 8px;border-radius:8px;font-size:12px;z-index:2}
+.group-controls{position:fixed;bottom:calc(26px + env(safe-area-inset-bottom,0px));left:0;right:0;display:flex;justify-content:center;gap:18px;z-index:3}
 #incoming.active{display:flex}
 #incoming .ringwrap{animation:none}
 #incName{font-size:28px;font-weight:600;direction:ltr}
@@ -123,8 +128,24 @@ h2{font-size:16px;font-weight:600;color:var(--muted)}
       <button class="btn" onclick="startCall(true)"><svg><use href="#i-video"/></svg>فيديو</button>
     </div>
   </div>
-  <h2>آخر المكالمات</h2>
+  <div class="dial" style="margin-top:12px">
+    <h2>مكالمة جماعية</h2>
+    <label class="field"><span id="roomIcon">👥</span><input id="roomInput" placeholder="اسم الغرفة" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="20"></label>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" onclick="joinGroup()"><svg><use href="#i-video"/></svg>انضمام للغرفة</button>
+    </div>
+  </div>
+  <h2 style="margin-top:22px">آخر المكالمات</h2>
   <div class="recent" id="recent"></div>
+</section>
+
+<section id="groupScreen" class="screen">
+  <div class="grid" id="groupGrid"></div>
+  <div class="group-controls">
+    <button class="cb" id="gMicBtn" onclick="toggleMic()"><i><svg><use href="#i-mic"/></svg></i>كتم</button>
+    <button class="cb vbtn" id="gCamBtn" onclick="toggleCam()"><i><svg><use href="#i-video"/></svg></i>الكاميرا</button>
+    <button class="cb end" onclick="leaveGroup()"><i><svg><use href="#i-phone"/></svg></i>خروج</button>
+  </div>
 </section>
 
 <section id="callScreen" class="screen">
@@ -417,11 +438,122 @@ socket.on('hangup', () => {
   cleanup();
 });
 
-// ---- تحكم ----
-function hangup() {
-  if (peer) socket.emit('hangup', { to: peer });
+// ---- Group Call Logic ----
+let groupPCs = new Map(); 
+let currentRoom = null;
+
+async function joinGroup() {
+  const room = $('roomInput').value.trim().toLowerCase();
+  if (!room) return toast('اكتب اسم الغرفة أولاً.');
+  
+  try {
+    await getMedia(true); // Always request video for group calls
+    currentRoom = room;
+    show('groupScreen');
+    
+    // Add local video to grid
+    addVideoToGrid(me, localStream);
+    
+    socket.emit('join-room', { room, name: me }, (res) => {
+      if (!res.ok) {
+        cleanup();
+        toast('تعذر الانضمام للغرفة.');
+        return;
+      }
+      // Server should return list of existing users in the room
+      if (res.users) {
+        res.users.forEach(user => {
+          initiateGroupCall(user);
+        });
+      }
+    });
+  } catch (e) {
+    toast('يجب السماح بالكاميرا والمايك للمكالمات الجماعية.');
+  }
+}
+
+async function initiateGroupCall(userId) {
+  if (userId === me) return;
+  
+  const pc = new RTCPeerConnection(ICE);
+  groupPCs.set(userId, pc);
+  
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  
+  pc.ontrack = (e) => {
+    addVideoToGrid(userId, e.streams[0]);
+  };
+  
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      socket.emit('room-signal', { to: userId, room: currentRoom, candidate: e.candidate });
+    }
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit('room-signal', { to: userId, room: currentRoom, offer });
+}
+
+function addVideoToGrid(userId, stream) {
+  const grid = $('groupGrid');
+  let el = $(`grid-${userId}`);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = `grid-${userId}`;
+    el.className = 'grid-item';
+    el.innerHTML = `<video autoplay playsinline></video><div class="name-tag"></div>`;
+    grid.appendChild(el);
+    el.querySelector('.name-tag').textContent = '@' + userId;
+  }
+  el.querySelector('video').srcObject = stream;
+}
+
+socket.on('room-signal', async ({ from, offer, answer, candidate }) => {
+  if (!currentRoom) return;
+  
+  let pc = groupPCs.get(from);
+  if (!pc) {
+    pc = new RTCPeerConnection(ICE);
+    groupPCs.set(from, pc);
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    pc.ontrack = (e) => addVideoToGrid(from, e.streams[0]);
+    pc.onicecandidate = (e) => {
+      if (e.candidate) socket.emit('room-signal', { to: from, room: currentRoom, candidate: e.candidate });
+    };
+  }
+
+  if (offer) {
+    await pc.setRemoteDescription(offer);
+    const ans = await pc.createAnswer();
+    await pc.setLocalDescription(ans);
+    socket.emit('room-signal', { to: from, room: currentRoom, answer: ans });
+  } else if (answer) {
+    await pc.setRemoteDescription(answer);
+  } else if (candidate) {
+    await pc.addIceCandidate(candidate).catch(() => {});
+  }
+});
+
+socket.on('user-joined', ({ userId }) => {
+  if (currentRoom) initiateGroupCall(userId);
+});
+
+socket.on('user-left', ({ userId }) => {
+  const el = $(`grid-${userId}`);
+  if (el) el.remove();
+  const pc = groupPCs.get(userId);
+  if (pc) { pc.close(); groupPCs.delete(userId); }
+});
+
+function leaveGroup() {
+  socket.emit('leave-room', { room: currentRoom });
+  groupPCs.forEach(pc => pc.close());
+  groupPCs.clear();
+  currentRoom = null;
   cleanup();
 }
+
 
 function setBtn(btn, off, onIcon, offIcon) {
   btn.classList.toggle('off', off);
