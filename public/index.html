@@ -347,7 +347,7 @@ async function startCall(video) {
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   openCallUI(target, 'جاري الاتصال...');
-  socket.emit('call', { to: target, offer }, (res) => {
+  socket.emit('call', { to: target, offer, video }, (res) => {
     if (!res.ok) {
       cleanup();
       toast(res.error === 'offline' ? 'المستخدم غير متصل حالياً.' :
@@ -366,10 +366,11 @@ async function startCall(video) {
 }
 
 // ---- استقبال مكالمة ----
-socket.on('incoming', ({ from, offer }) => {
+socket.on('incoming', ({ from, offer, video }) => {
   if (pc) return socket.emit('reject', { to: from }); // مشغول
   peer = from;
   pendingOffer = offer;
+  pendingVideo = video;
   $('incName').textContent = '@' + from;
   paint($('incAv'), from);
   $('incoming').classList.add('active');
@@ -379,7 +380,7 @@ socket.on('incoming', ({ from, offer }) => {
 async function acceptCall() {
   $('incoming').classList.remove('active');
   try {
-    await getMedia(true);
+    await getMedia(pendingVideo);
   } catch (e) {
     try { await getMedia(false); } catch (e2) { toast('ما قدرت أوصل للمايك أو الكاميرا.'); return rejectCall(); }
   }
