@@ -379,8 +379,10 @@ let fcmToken = null, pushInit = false;
 let facing = 'user', timerInt = null, startedAt = 0;
 let screenStream = null, screenSender = null, screenOriginalTrack = null, screenTrack = null, screenEndedHandler = null, screenSharing = false;
 let makingOffer = false, ignoreOffer = false, isSettingRemoteAnswerPending = false;
-const canCaptureScreen = !isNativeApp && navigator.mediaDevices &&
-  typeof navigator.mediaDevices.getDisplayMedia === 'function';
+const canCaptureScreen = Boolean(
+  navigator.mediaDevices &&
+  typeof navigator.mediaDevices.getDisplayMedia === 'function',
+);
 
 // ---- مساعدات الواجهة ----
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} }
@@ -603,7 +605,7 @@ enablePipDragging();
 if (!canCaptureScreen) {
   $('shareBtn').classList.add('share-unavailable');
   $('shareBtn').title = isNativeApp
-    ? 'مشاركة الشاشة غير مدعومة داخل تطبيق الهاتف حالياً'
+    ? 'مشاركة الشاشة غير متاحة في إصدار WebView الحالي'
     : 'استخدم متصفحاً يدعم مشاركة الشاشة';
   $('shareBtn').querySelector('span').textContent = 'مشاركة';
 }
@@ -934,7 +936,7 @@ async function toggleScreenShare() {
   if (!pc || !peer) return toast('ابدأ مكالمة أولاً لمشاركة الشاشة.');
   if (!canCaptureScreen) {
     return toast(isNativeApp
-      ? 'مشاركة الشاشة غير مدعومة داخل تطبيق الهاتف حالياً. استخدم NOVA من متصفح كمبيوتر يدعمها.'
+      ? 'مشاركة الشاشة غير متاحة في إصدار WebView الحالي. حدّث Android System WebView ثم أعد المحاولة.'
       : 'هذا المتصفح لا يدعم مشاركة الشاشة. جرّب Chrome أو Edge على الكمبيوتر.');
   }
 
