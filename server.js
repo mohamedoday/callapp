@@ -57,15 +57,16 @@ app.get('/ice', async (req, res) => {
 
 // ---------- حالة المكالمات ----------
 const online = new Map();  // username -> socket.id
-const pending = new Map(); // callee -> { from, offer, ice[], t, delivered }
+const pending = new Map(); // callee -> { from, offer, video, ice[], t, delivered }
 
 function deliver(name) {
   const p = pending.get(name);
   const id = online.get(name);
-  if (!p || !id || p.delivered) return;
+  const recipient = id && io.sockets.sockets.get(id);
+  if (!p || !recipient || recipient.inForeground === false || p.delivered) return;
   if (Date.now() - p.t > 60000) return pending.delete(name);
-  io.to(id).emit('incoming', { from: p.from, offer: p.offer });
-  p.ice.forEach((c) => io.to(id).emit('ice', { from: p.from, candidate: c }));
+  recipient.emit('incoming', { from: p.from, offer: p.offer, video: p.video });
+  p.ice.forEach((c) => recipient.emit('ice', { from: p.from, candidate: c }));
   p.delivered = true;
   p.ice = [];
 }
@@ -102,12 +103,19 @@ io.on('connection', (socket) => {
       if (!user) await saveUser(name, { secret: hash });
       online.set(name, socket.id);
       socket.username = name;
+      socket.inForeground = payload.active !== false;
       cb({ ok: true, name });
-      deliver(name);
+      if (socket.inForeground) deliver(name);
     } catch (e) {
       console.error(e);
       cb({ ok: false, error: 'server' });
     }
+  });
+
+  socket.on('app-state', (active) => {
+    if (!socket.username || typeof active !== 'boolean') return;
+    socket.inForeground = active;
+    if (active) deliver(socket.username);
   });
 
   socket.on('token', (t) => {
@@ -124,30 +132,41 @@ io.on('connection', (socket) => {
       if (!from || !to || to === from) return cb({ ok: false, error: 'invalid' });
 
       // نسجل المكالمة فوراً عشان ما نضيع أي ICE candidates توصل قبل ما نخلص
-      pending.set(to, { from, offer: payload.offer, ice: [], t: Date.now(), delivered: false });
+      pending.set(to, {
+        from,
+        offer: payload.offer,
+        video: payload.video === true,
+        ice: [],
+        t: Date.now(),
+        delivered: false,
+      });
 
       const user = await getUser(to);
       if (!user) {
         pending.delete(to);
         return cb({ ok: false, error: 'notfound' });
       }
-      if (online.has(to)) {
+      const recipientId = online.get(to);
+      const recipient = recipientId && io.sockets.sockets.get(recipientId);
+      const isForeground = recipient && recipient.inForeground !== false;
+      if (isForeground) {
         deliver(to);
-        return cb({ ok: true });
       }
-      if (user.fcmToken && messaging) {
+      let pushed = false;
+      if (!isForeground && user.fcmToken && messaging) {
         try {
           await messaging.send({
             token: user.fcmToken,
             notification: { title: '📞 مكالمة واردة', body: '@' + from + ' يتصل بك' },
             android: { priority: 'high', notification: { channelId: 'calls', sound: 'default' } },
-            data: { from },
+            data: { type: 'incoming_call', from, video: payload.video === true ? 'true' : 'false' },
           });
-          return cb({ ok: true, pushed: true });
+          pushed = true;
         } catch (e) {
           console.error('push failed:', e.message);
         }
       }
+      if (isForeground || pushed) return cb({ ok: true, pushed });
       pending.delete(to);
       cb({ ok: false, error: 'offline' });
     } catch (e) {
