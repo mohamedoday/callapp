@@ -3,64 +3,157 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12142b">
 <title>مكالمات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: #0f1115; color: #fff; font-family: system-ui, sans-serif; }
-  .screen { display: none; height: 100%; padding: 24px; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
-  .screen.active { display: flex; }
-  input { width: 100%; max-width: 320px; padding: 14px; border-radius: 12px; border: 1px solid #333; background: #1a1d24; color: #fff; font-size: 16px; text-align: center; }
-  button { padding: 14px 28px; border: 0; border-radius: 12px; font-size: 16px; cursor: pointer; color: #fff; background: #2f6fed; }
-  button.green { background: #1fa855; } button.red { background: #e5484d; }
-  #err, #homeErr { color: #ff7b7b; min-height: 20px; text-align: center; }
-  #callScreen { padding: 0; position: relative; justify-content: flex-start; }
-  #remote { width: 100%; height: 100%; object-fit: cover; background: #000; }
-  #local { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; width: 28vw; max-width: 140px; border-radius: 12px; border: 2px solid #fff3; background: #000; }
-  #controls { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 14px; }
-  #status { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; background: #0008; padding: 6px 12px; border-radius: 10px; }
-  #incoming { position: fixed; inset: 0; background: #000d; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px; z-index: 10; }
-  #incoming.active { display: flex; }
-  #incoming h2 { font-size: 24px; }
-  .row { display: flex; gap: 12px; }
+:root{--bg:#12142b;--surface:#1c1f3f;--line:#2b2f5c;--text:#f2f4ff;--muted:#9aa0c7;--accent:#35d6a4;--danger:#ff5470;--peri:#7b8cff;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Readex Pro',system-ui,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;border:0;cursor:pointer;background:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--peri);outline-offset:3px}
+svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.screen{display:none;position:absolute;inset:0;flex-direction:column;padding:calc(24px + env(safe-area-inset-top,0px)) 20px calc(24px + env(safe-area-inset-bottom,0px));overflow-y:auto}
+.screen.active{display:flex}
+.av{border-radius:50%;display:grid;place-items:center;font-weight:600;color:#fff;flex:none;text-shadow:0 1px 2px #0004}
+
+/* login */
+#loginScreen{align-items:center;justify-content:center;text-align:center;gap:14px;background:radial-gradient(120% 70% at 50% 0%,#2a2a6e 0%,var(--bg) 60%)}
+.logo{width:84px;height:84px;border-radius:28px;display:grid;place-items:center;background:linear-gradient(135deg,var(--peri),var(--accent));box-shadow:0 14px 40px #7b8cff55}
+.logo svg{width:40px;height:40px;color:#12142b}
+h1{font-size:30px;font-weight:600}
+.sub{color:var(--muted);max-width:290px;line-height:1.7}
+.field{width:100%;max-width:340px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:0 16px;direction:ltr}
+.field span{color:var(--muted)}
+.field input{flex:1;min-width:0;background:none;border:0;color:var(--text);font:inherit;font-size:17px;padding:16px 0;outline:none;text-align:left}
+.field:focus-within{border-color:var(--peri)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:15px 22px;border-radius:16px;font-weight:600;background:var(--accent);color:#08261d;width:100%;max-width:340px}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.btn:active{transform:scale(.98)}
+
+/* home */
+#homeScreen{gap:22px;max-width:520px;margin:0 auto;width:100%}
+.me{display:flex;align-items:center;gap:12px}
+.me .av{width:46px;height:46px;font-size:19px}
+.me b{display:block;font-size:17px;direction:ltr;text-align:right}
+.me small{color:var(--accent)}
+.dial{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.dial .field{max-width:none;background:var(--bg)}
+.dial .row{display:flex;gap:10px}
+.dial .btn{max-width:none}
+h2{font-size:16px;font-weight:600;color:var(--muted)}
+.recent{display:flex;flex-direction:column;gap:6px}
+.rc{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:var(--surface)}
+.rc .av{width:42px;height:42px;font-size:17px}
+.rc .nm{flex:1;direction:ltr;text-align:right}
+.rc button{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#ffffff14}
+.rc button:active{background:#ffffff2a}
+.empty{color:var(--muted);line-height:1.8;padding:8px 2px}
+
+/* call */
+#callScreen{padding:0;background:radial-gradient(100% 60% at 50% 30%,#2c2a78 0%,var(--bg) 70%)}
+#remote{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;opacity:0;transition:opacity .3s}
+#callScreen.has-video #remote{opacity:1}
+.stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;pointer-events:none}
+.ringwrap{position:relative;width:150px;height:150px;display:grid;place-items:center;margin-bottom:18px}
+.ringwrap .av{width:132px;height:132px;font-size:56px;position:relative;z-index:1}
+.ring{position:absolute;inset:6px;border-radius:50%;border:2px solid var(--peri);opacity:0}
+.ringing .ring{animation:ripple 2.4s ease-out infinite}
+.ringing .ring:nth-child(2){animation-delay:.8s}.ringing .ring:nth-child(3){animation-delay:1.6s}
+@keyframes ripple{0%{transform:scale(.9);opacity:.7}100%{transform:scale(2);opacity:0}}
+#peerName{font-size:26px;font-weight:600;direction:ltr}
+#status{color:var(--muted);font-variant-numeric:tabular-nums}
+.connected #status{color:var(--accent)}
+#callScreen.has-video.connected .ringwrap{display:none}
+#callScreen.has-video.connected .stage{inset:0 0 auto 0;justify-content:flex-start;align-items:flex-end;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 46px;background:linear-gradient(#000a,transparent);gap:2px}
+#callScreen.has-video.connected #peerName{font-size:19px}
+#local{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));left:16px;width:27vw;max-width:128px;aspect-ratio:3/4;object-fit:cover;border-radius:18px;border:2px solid #ffffff40;background:#000;box-shadow:0 8px 24px #0008;z-index:3;transform:scaleX(-1)}
+#local.back{transform:none}
+.dock{position:absolute;bottom:calc(26px + env(safe-area-inset-bottom,0px));left:0;right:0;display:flex;justify-content:center;gap:18px;z-index:3}
+.cb{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:#fff;text-shadow:0 1px 3px #0008}
+.cb i{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#ffffff26;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:background .15s}
+.cb.off i{background:#fff;color:#12142b}
+.cb.end i{background:var(--danger);color:#fff}
+.cb.end svg{transform:rotate(135deg)}
+.audio-only .vbtn{display:none}
+
+/* incoming */
+#incoming{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;background:radial-gradient(100% 60% at 50% 30%,#2c2a78 0%,var(--bg) 70%)}
+#incoming.active{display:flex}
+#incoming .ringwrap{animation:none}
+#incName{font-size:28px;font-weight:600;direction:ltr}
+.ans{display:flex;gap:56px;margin-top:56px}
+.ans .cb i{width:70px;height:70px;background:var(--accent);color:#08261d}
+.ans .cb.end i{background:var(--danger);color:#fff}
+.ans .cb{font-size:13px}
+.ans .cb.end svg{transform:rotate(135deg)}
+
+#toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:#fff;color:#12142b;padding:12px 18px;border-radius:14px;font-size:14px;max-width:88vw;text-align:center;opacity:0;pointer-events:none;transition:.25s;z-index:30}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.ringing .ring{animation:none}*{transition:none!important}}
 </style>
 </head>
 <body>
 
-<div id="loginScreen" class="screen active">
-  <h1>📞 مكالمات</h1>
-  <input id="usernameInput" placeholder="اختر اسم مستخدم (a-z 0-9 _)" autocapitalize="none" autocomplete="off">
-  <button onclick="register()">دخول</button>
-  <div id="err"></div>
-</div>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></symbol>
+  <symbol id="i-vidoff" viewBox="0 0 24 24"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.7 0H14a2 2 0 0 1 2 2v3.3l1 1L23 7v10M1 1l22 22"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/></symbol>
+  <symbol id="i-micoff" viewBox="0 0 24 24"><path d="M2 2l20 20M9 9v2a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.9-.6M19 10v1a7 7 0 0 1-.9 3.4M5 10v1a7 7 0 0 0 11.1 5.7M12 18v4"/></symbol>
+  <symbol id="i-flip" viewBox="0 0 24 24"><path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/><circle cx="12" cy="12" r="3"/><path d="m18 22-3-3 3-3M6 2l3 3-3 3"/></symbol>
+</defs></svg>
 
-<div id="homeScreen" class="screen">
-  <h2 id="meLabel"></h2>
-  <input id="targetInput" placeholder="اسم المستخدم اللي تبي تتصل فيه" autocapitalize="none" autocomplete="off">
-  <div class="row">
-    <button class="green" onclick="startCall(true)">📹 فيديو</button>
-    <button onclick="startCall(false)">🎤 صوت</button>
+<section id="loginScreen" class="screen active">
+  <div class="logo"><svg><use href="#i-phone"/></svg></div>
+  <h1>مكالمات</h1>
+  <p class="sub">اتصل بأي شخص باسم المستخدم فقط، صوت أو فيديو.</p>
+  <label class="field"><span>@</span><input id="usernameInput" placeholder="username" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="20"></label>
+  <button class="btn" onclick="register()">ابدأ</button>
+</section>
+
+<section id="homeScreen" class="screen">
+  <div class="me"><div class="av" id="meAv"></div><div><b id="meLabel"></b><small>متصل</small></div></div>
+  <div class="dial">
+    <label class="field"><span>@</span><input id="targetInput" placeholder="اسم المستخدم" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="20"></label>
+    <div class="row">
+      <button class="btn ghost" onclick="startCall(false)"><svg><use href="#i-phone"/></svg>صوت</button>
+      <button class="btn" onclick="startCall(true)"><svg><use href="#i-video"/></svg>فيديو</button>
+    </div>
   </div>
-  <div id="homeErr"></div>
-</div>
+  <h2>آخر المكالمات</h2>
+  <div class="recent" id="recent"></div>
+</section>
 
-<div id="callScreen" class="screen">
+<section id="callScreen" class="screen">
   <video id="remote" autoplay playsinline></video>
-  <video id="local" autoplay playsinline muted></video>
-  <div id="status">...</div>
-  <div id="controls">
-    <button onclick="toggleMic()" id="micBtn">🎤</button>
-    <button onclick="toggleCam()" id="camBtn">📹</button>
-    <button class="red" onclick="hangup()">إنهاء</button>
+  <div class="stage" id="stage">
+    <div class="ringwrap"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="av" id="callAv"></div></div>
+    <div id="peerName"></div>
+    <div id="status"></div>
   </div>
-</div>
+  <video id="local" autoplay playsinline muted></video>
+  <div class="dock">
+    <button class="cb" id="micBtn" onclick="toggleMic()"><i><svg><use href="#i-mic"/></svg></i>كتم</button>
+    <button class="cb vbtn" id="camBtn" onclick="toggleCam()"><i><svg><use href="#i-video"/></svg></i>الكاميرا</button>
+    <button class="cb vbtn" onclick="flipCam()"><i><svg><use href="#i-flip"/></svg></i>قلب</button>
+    <button class="cb end" onclick="hangup()"><i><svg><use href="#i-phone"/></svg></i>إنهاء</button>
+  </div>
+</section>
 
 <div id="incoming">
-  <h2 id="incomingText"></h2>
-  <div class="row">
-    <button class="green" onclick="acceptCall()">قبول</button>
-    <button class="red" onclick="rejectCall()">رفض</button>
+  <div class="ringwrap ringing"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="av" id="incAv"></div></div>
+  <div id="incName"></div>
+  <div style="color:var(--muted)">يتصل بك</div>
+  <div class="ans">
+    <button class="cb end" onclick="rejectCall()"><i><svg><use href="#i-phone"/></svg></i>رفض</button>
+    <button class="cb" onclick="acceptCall()"><i><svg><use href="#i-phone"/></svg></i>قبول</button>
   </div>
 </div>
+
+<div id="toast" role="status"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -70,9 +163,30 @@ const $ = (id) => document.getElementById(id);
 let me = null, peer = null, pc = null, localStream = null;
 let pendingOffer = null, pendingCandidates = [], callTimer = null;
 let fcmToken = null, pushInit = false;
+let facing = 'user', timerInt = null, startedAt = 0;
+
+// ---- مساعدات الواجهة ----
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} }
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 3200);
+}
+function paint(el, name) {
+  const h = [...name].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % 360;
+  el.style.background = `linear-gradient(135deg,hsl(${h} 70% 62%),hsl(${(h + 50) % 360} 70% 46%))`;
+  el.textContent = name[0].toUpperCase();
+}
+function show(id) {
+  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+const ICON = (id) => `<svg><use href="#${id}"/></svg>`;
+const VALID = /^[a-z0-9_]{3,20}$/;
 
 // ---- هوية الجهاز (تمنع أحد يسرق اسمك) ----
-function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} }
 let secret = store('secret');
 if (!secret) {
   secret = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
@@ -83,39 +197,65 @@ if (!secret) {
 let ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 fetch('/ice').then((r) => r.json()).then((s) => { ICE = { iceServers: s }; }).catch(() => {});
 
-function show(id) {
-  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
-  $(id).classList.add('active');
+// ---- آخر المكالمات ----
+function getRecent() {
+  try { return JSON.parse(store('recent') || '[]').filter((n) => VALID.test(n)).slice(0, 6); } catch (e) { return []; }
+}
+function addRecent(name) {
+  if (!VALID.test(name)) return;
+  store('recent', JSON.stringify([name, ...getRecent().filter((n) => n !== name)].slice(0, 6)));
+  renderRecent();
+}
+function renderRecent() {
+  const box = $('recent');
+  const list = getRecent();
+  box.innerHTML = '';
+  if (!list.length) {
+    box.innerHTML = '<p class="empty">ما عندك مكالمات سابقة. اكتب اسم مستخدم فوق وابدأ أول مكالمة.</p>';
+    return;
+  }
+  list.forEach((n) => {
+    const row = document.createElement('div');
+    row.className = 'rc';
+    row.innerHTML = `<div class="av"></div><div class="nm"></div><button aria-label="اتصال صوت">${ICON('i-phone')}</button><button aria-label="اتصال فيديو">${ICON('i-video')}</button>`;
+    paint(row.querySelector('.av'), n);
+    row.querySelector('.nm').textContent = '@' + n;
+    const [a, v] = row.querySelectorAll('button');
+    a.onclick = () => { $('targetInput').value = n; startCall(false); };
+    v.onclick = () => { $('targetInput').value = n; startCall(true); };
+    box.appendChild(row);
+  });
 }
 
 // ---- تسجيل الدخول ----
-const errText = (e) => e === 'taken' ? 'الاسم مستخدم' : e === 'server' ? 'خطأ في السيرفر' : 'الاسم غير صالح (3-20 حرف: a-z 0-9 _)';
+const errText = (e) => e === 'taken' ? 'الاسم مستخدم، اختر اسماً آخر.' : e === 'server' ? 'تعذر الاتصال بالسيرفر، حاول بعد قليل.' : 'الاسم غير صالح: من 3 إلى 20 حرفاً، إنجليزي أو أرقام أو _';
 
-function register() {
-  login($('usernameInput').value.trim().toLowerCase(), false);
-}
+function register() { login($('usernameInput').value.trim().toLowerCase(), false); }
 
 function login(name, silent) {
   socket.emit('register', { name, secret }, (res) => {
     if (!res.ok) {
       if (silent) { me = null; try { localStorage.removeItem('name'); } catch (e) {} show('loginScreen'); }
-      $('err').textContent = errText(res.error);
+      toast(errText(res.error));
       return;
     }
     me = res.name;
     store('name', me);
     $('meLabel').textContent = '@' + me;
+    paint($('meAv'), me);
+    renderRecent();
     if (!pc) show('homeScreen');
     if (fcmToken) socket.emit('token', fcmToken);
     initPush();
   });
 }
 
-// دخول تلقائي + إعادة تسجيل عند انقطاع/رجوع الاتصال
 socket.on('connect', () => {
   const n = me || store('name');
   if (n) login(n, true);
 });
+$('usernameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') register(); });
+$('targetInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') startCall(true); });
 
 // ---- الإشعارات (تطبيق الجوال فقط) ----
 async function initPush() {
@@ -132,27 +272,58 @@ async function initPush() {
   } catch (e) { console.log('push init failed', e); }
 }
 
+// ---- شاشة المكالمة ----
+function openCallUI(name, label) {
+  const cs = $('callScreen');
+  cs.classList.remove('has-video', 'connected');
+  cs.classList.add('ringing');
+  $('stage').classList.add('ringing');
+  $('peerName').textContent = '@' + name;
+  paint($('callAv'), name);
+  $('status').textContent = label;
+  show('callScreen');
+}
+function markConnected() {
+  const cs = $('callScreen');
+  cs.classList.add('connected');
+  $('stage').classList.remove('ringing');
+  clearTimeout(callTimer);
+  if (timerInt) return;
+  startedAt = Date.now();
+  const tick = () => {
+    const s = Math.floor((Date.now() - startedAt) / 1000);
+    $('status').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  };
+  tick();
+  timerInt = setInterval(tick, 1000);
+}
+
 // ---- WebRTC ----
 async function getMedia(video) {
   localStream = await navigator.mediaDevices.getUserMedia({
     audio: true,
-    video: video ? { facingMode: 'user' } : false,
+    video: video ? { facingMode: facing } : false,
   });
   $('local').srcObject = localStream;
   $('local').style.display = video ? 'block' : 'none';
+  document.body.classList.toggle('audio-only', !video);
 }
 
 function createPC() {
   pc = new RTCPeerConnection(ICE);
   localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
-  pc.ontrack = (e) => { $('remote').srcObject = e.streams[0]; };
+  pc.ontrack = (e) => {
+    const s = e.streams[0];
+    $('remote').srcObject = s;
+    $('callScreen').classList.toggle('has-video', s.getVideoTracks().length > 0);
+  };
   pc.onicecandidate = (e) => {
     if (e.candidate) socket.emit('ice', { to: peer, candidate: e.candidate });
   };
   pc.onconnectionstatechange = () => {
     const s = pc.connectionState;
-    $('status').textContent = s === 'connected' ? '🟢 متصل' : s;
-    if (s === 'connected') clearTimeout(callTimer);
+    if (s === 'connected') markConnected();
+    if (s === 'disconnected') $('status').textContent = 'الاتصال ضعيف...';
     if (s === 'failed' || s === 'closed') cleanup();
   };
 }
@@ -163,34 +334,32 @@ async function flushCandidates() {
 }
 
 async function startCall(video) {
-  const target = $('targetInput').value.trim().toLowerCase();
-  $('homeErr').textContent = '';
-  if (!target) return;
+  const target = $('targetInput').value.trim().toLowerCase().replace(/^@/, '');
+  if (!VALID.test(target)) return toast('اكتب اسم مستخدم صحيح.');
+  if (target === me) return toast('هذا اسمك، اكتب اسم شخص آخر.');
   try {
     await getMedia(video);
   } catch (e) {
-    $('homeErr').textContent = 'ما قدرت أوصل للمايك/الكاميرا';
-    return;
+    return toast('ما قدرت أوصل للمايك أو الكاميرا. اسمح بالصلاحية من إعدادات الجهاز.');
   }
   peer = target;
   createPC();
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  show('callScreen');
-  $('status').textContent = 'جاري الاتصال...';
+  openCallUI(target, 'جاري الاتصال...');
   socket.emit('call', { to: target, offer }, (res) => {
     if (!res.ok) {
       cleanup();
-      $('homeErr').textContent =
-        res.error === 'offline' ? 'المستخدم غير متصل' :
-        res.error === 'notfound' ? 'اسم المستخدم غير موجود' : 'خطأ';
+      toast(res.error === 'offline' ? 'المستخدم غير متصل حالياً.' :
+            res.error === 'notfound' ? 'ما لقينا هذا المستخدم، تأكد من الاسم.' : 'تعذر إجراء المكالمة.');
       return;
     }
-    if (res.pushed) $('status').textContent = 'جاري الرنين على جواله...';
+    addRecent(target);
+    $('status').textContent = res.pushed ? 'يرن على جواله...' : 'يرن...';
     callTimer = setTimeout(() => {
       if (pc && pc.connectionState !== 'connected') {
         hangup();
-        $('homeErr').textContent = 'ما رد';
+        toast('ما رد على المكالمة.');
       }
     }, 60000);
   });
@@ -201,7 +370,8 @@ socket.on('incoming', ({ from, offer }) => {
   if (pc) return socket.emit('reject', { to: from }); // مشغول
   peer = from;
   pendingOffer = offer;
-  $('incomingText').textContent = '📞 مكالمة من @' + from;
+  $('incName').textContent = '@' + from;
+  paint($('incAv'), from);
   $('incoming').classList.add('active');
   if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
 });
@@ -211,7 +381,7 @@ async function acceptCall() {
   try {
     await getMedia(true);
   } catch (e) {
-    try { await getMedia(false); } catch (e2) { return rejectCall(); }
+    try { await getMedia(false); } catch (e2) { toast('ما قدرت أوصل للمايك أو الكاميرا.'); return rejectCall(); }
   }
   createPC();
   await pc.setRemoteDescription(pendingOffer);
@@ -219,7 +389,8 @@ async function acceptCall() {
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
   socket.emit('answer', { to: peer, answer });
-  show('callScreen');
+  addRecent(peer);
+  openCallUI(peer, 'جاري الاتصال...');
 }
 
 function rejectCall() {
@@ -239,7 +410,7 @@ socket.on('ice', async ({ candidate }) => {
   else pendingCandidates.push(candidate);
 });
 
-socket.on('rejected', () => { cleanup(); $('homeErr').textContent = 'تم رفض المكالمة'; });
+socket.on('rejected', () => { cleanup(); toast('تم رفض المكالمة.'); });
 socket.on('hangup', () => {
   $('incoming').classList.remove('active');
   cleanup();
@@ -251,23 +422,52 @@ function hangup() {
   cleanup();
 }
 
+function setBtn(btn, off, onIcon, offIcon) {
+  btn.classList.toggle('off', off);
+  btn.querySelector('use').setAttribute('href', '#' + (off ? offIcon : onIcon));
+}
 function toggleMic() {
   const t = localStream && localStream.getAudioTracks()[0];
-  if (t) { t.enabled = !t.enabled; $('micBtn').textContent = t.enabled ? '🎤' : '🔇'; }
+  if (t) { t.enabled = !t.enabled; setBtn($('micBtn'), !t.enabled, 'i-mic', 'i-micoff'); }
 }
 function toggleCam() {
   const t = localStream && localStream.getVideoTracks()[0];
-  if (t) { t.enabled = !t.enabled; $('camBtn').textContent = t.enabled ? '📹' : '🚫'; }
+  if (t) { t.enabled = !t.enabled; setBtn($('camBtn'), !t.enabled, 'i-video', 'i-vidoff'); }
+}
+async function flipCam() {
+  if (!pc || !localStream || !localStream.getVideoTracks().length) return;
+  const old = localStream.getVideoTracks()[0];
+  const next = facing === 'user' ? 'environment' : 'user';
+  old.stop();
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: next } });
+    const nt = s.getVideoTracks()[0];
+    const sender = pc.getSenders().find((x) => x.track && x.track.kind === 'video') || pc.getSenders().find((x) => !x.track);
+    if (sender) await sender.replaceTrack(nt);
+    localStream.removeTrack(old);
+    localStream.addTrack(nt);
+    $('local').srcObject = localStream;
+    facing = next;
+    $('local').classList.toggle('back', facing === 'environment');
+    setBtn($('camBtn'), false, 'i-video', 'i-vidoff');
+  } catch (e) {
+    toast('ما قدرت أقلب الكاميرا.');
+  }
 }
 
 function cleanup() {
   clearTimeout(callTimer);
+  clearInterval(timerInt); timerInt = null;
   if (pc) { pc.close(); pc = null; }
   if (localStream) { localStream.getTracks().forEach((t) => t.stop()); localStream = null; }
   $('remote').srcObject = null;
   $('local').srcObject = null;
-  $('micBtn').textContent = '🎤';
-  $('camBtn').textContent = '📹';
+  $('local').classList.remove('back');
+  $('callScreen').classList.remove('has-video', 'connected', 'ringing');
+  $('stage').classList.remove('ringing');
+  facing = 'user';
+  setBtn($('micBtn'), false, 'i-mic', 'i-micoff');
+  setBtn($('camBtn'), false, 'i-video', 'i-vidoff');
   peer = null; pendingOffer = null; pendingCandidates = [];
   if (me) show('homeScreen');
 }
