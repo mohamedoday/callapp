@@ -365,6 +365,9 @@ const capacitorPlatform = window.Capacitor && typeof window.Capacitor.getPlatfor
   : '';
 const isAndroidNative = capacitorPlatform === 'android';
 const isNativeApp = capacitorPlatform === 'android' || capacitorPlatform === 'ios';
+const nativeScreenShare = window.Capacitor && window.Capacitor.Plugins
+  ? window.Capacitor.Plugins.NativeScreenShare
+  : null;
 document.documentElement.classList.toggle('native-android', isAndroidNative);
 const HD_VIDEO_CONSTRAINTS = {
   width: { ideal: 1280 },
@@ -379,8 +382,10 @@ let fcmToken = null, pushInit = false;
 let facing = 'user', timerInt = null, startedAt = 0;
 let screenStream = null, screenSender = null, screenOriginalTrack = null, screenTrack = null, screenEndedHandler = null, screenSharing = false;
 let makingOffer = false, ignoreOffer = false, isSettingRemoteAnswerPending = false;
+let screenNativeCapture = false, nativeFrameListener = null, nativeStoppedListener = null;
+let nativeFirstFrameResolve = null, nativeFirstFrameReject = null, screenShareGeneration = 0, screenCaptureStarting = false;
 const canCaptureScreen = Boolean(
-  navigator.mediaDevices &&
+  !isNativeApp && navigator.mediaDevices &&
   typeof navigator.mediaDevices.getDisplayMedia === 'function',
 );
 
@@ -602,10 +607,10 @@ document.addEventListener('visibilitychange', () => {
 $('usernameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') register(); });
 $('targetInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') startCall(true); });
 enablePipDragging();
-if (!canCaptureScreen) {
+if (!canCaptureScreen && !(isAndroidNative && nativeScreenShare)) {
   $('shareBtn').classList.add('share-unavailable');
   $('shareBtn').title = isNativeApp
-    ? 'مشاركة الشاشة غير متاحة في إصدار WebView الحالي'
+    ? 'مشاركة الشاشة غير متاحة في هذا الإصدار'
     : 'استخدم متصفحاً يدعم مشاركة الشاشة';
   $('shareBtn').querySelector('span').textContent = 'مشاركة';
 }
@@ -929,23 +934,35 @@ function hangup() {
 }
 
 async function toggleScreenShare() {
+  if (screenCaptureStarting) return;
   if (screenSharing) {
     await stopScreenShare();
     return;
   }
   if (!pc || !peer) return toast('ابدأ مكالمة أولاً لمشاركة الشاشة.');
-  if (!canCaptureScreen) {
-    return toast(isNativeApp
-      ? 'مشاركة الشاشة غير متاحة في إصدار WebView الحالي. حدّث Android System WebView ثم أعد المحاولة.'
-      : 'هذا المتصفح لا يدعم مشاركة الشاشة. جرّب Chrome أو Edge على الكمبيوتر.');
+  if (isAndroidNative && !nativeScreenShare) {
+    return toast('تعذر تشغيل مشاركة الشاشة في هذا الإصدار من التطبيق. حدّث NOVA إلى أحدث إصدار.');
+  }
+  if (!isAndroidNative && !canCaptureScreen) {
+    return toast('هذا المتصفح لا يدعم مشاركة الشاشة. جرّب Chrome أو Edge على الكمبيوتر.');
   }
 
+  const generation = ++screenShareGeneration;
+  screenCaptureStarting = true;
+  $('shareBtn').disabled = true;
   let stream;
   try {
-    stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: { ideal: 15, max: 30 } },
-      audio: false,
-    });
+    stream = isAndroidNative
+      ? await startNativeScreenCapture(generation)
+      : await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: { ideal: 15, max: 30 } },
+          audio: false,
+        });
+    if (generation !== screenShareGeneration || !pc || !peer) {
+      stream.getTracks().forEach((track) => track.stop());
+      if (isAndroidNative && nativeScreenShare) await nativeScreenShare.stopCapture();
+      return;
+    }
     const track = stream.getVideoTracks()[0];
     if (!track) throw new Error('Screen capture returned no video track.');
     track.contentHint = 'detail';
@@ -961,6 +978,7 @@ async function toggleScreenShare() {
     }
     screenStream = stream;
     screenTrack = track;
+    screenNativeCapture = isAndroidNative;
     await configureVideoSender(screenSender, true);
 
     const preview = $('localSharePreview');
@@ -971,8 +989,10 @@ async function toggleScreenShare() {
     preview.play().catch((e) => console.warn('Local screen preview could not start:', e));
 
     screenSharing = true;
-    screenEndedHandler = () => { stopScreenShare(); };
-    track.addEventListener('ended', screenEndedHandler, { once: true });
+    if (!screenNativeCapture) {
+      screenEndedHandler = () => { stopScreenShare(); };
+      track.addEventListener('ended', screenEndedHandler, { once: true });
+    }
     $('callScreen').classList.add('sharing-local');
     $('callScreen').classList.remove('sharing-remote');
     $('shareStatus').textContent = 'أنت تشارك الشاشة';
@@ -985,6 +1005,15 @@ async function toggleScreenShare() {
     socket.emit('screen-share-state', { to: peer, sharing: true });
   } catch (e) {
     console.error('Screen sharing could not start:', e);
+    if (generation !== screenShareGeneration) {
+      if (stream) stream.getTracks().forEach((track) => track.stop());
+      if (isAndroidNative && nativeScreenShare) {
+        await nativeScreenShare.stopCapture().catch((stopError) =>
+          console.error('Could not stop cancelled Android capture:', stopError));
+      }
+      clearScreenShareState();
+      return;
+    }
     if (screenSender && screenOriginalTrack && pc) {
       await screenSender.replaceTrack(screenOriginalTrack).catch((restoreError) =>
         console.error('Could not restore camera after screen-share failure:', restoreError));
@@ -992,19 +1021,108 @@ async function toggleScreenShare() {
       pc.removeTrack(screenSender);
     }
     if (stream) stream.getTracks().forEach((track) => track.stop());
+    if (isAndroidNative && nativeScreenShare) {
+      await nativeScreenShare.stopCapture().catch((stopError) =>
+        console.error('Could not stop failed Android capture:', stopError));
+    }
     clearScreenShareState();
-    toast(e.name === 'NotAllowedError'
+    toast(e.code === 'CAPTURE_DENIED' || e.name === 'NotAllowedError'
       ? 'لم يتم السماح بمشاركة الشاشة.'
-      : 'تعذر بدء مشاركة الشاشة. حاول مرة أخرى.');
+      : e.code === 'CAPTURE_UNAVAILABLE'
+        ? 'مشاركة الشاشة غير متاحة على هذا الجهاز.'
+        : 'تعذر بدء مشاركة الشاشة. حاول مرة أخرى.');
+  } finally {
+    if (generation === screenShareGeneration) {
+      screenCaptureStarting = false;
+      $('shareBtn').disabled = false;
+    }
   }
 }
 
-async function stopScreenShare() {
+async function startNativeScreenCapture(generation) {
+  if (!nativeScreenShare || !HTMLCanvasElement.prototype.captureStream) {
+    throw new Error('Native screen streaming is not available in this app.');
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 540;
+  canvas.height = 960;
+  const context = canvas.getContext('2d', { alpha: false });
+  if (!context) throw new Error('Could not initialize the screen-share preview.');
+  const stream = canvas.captureStream(10);
+  screenStream = stream;
+  screenTrack = stream.getVideoTracks()[0] || null;
+  screenNativeCapture = true;
+
+  const preview = $('localSharePreview');
+  preview.autoplay = true;
+  preview.playsInline = true;
+  preview.muted = true;
+  preview.srcObject = stream;
+  preview.play().catch((e) => console.warn('Local screen preview could not start:', e));
+
+  const firstFrame = new Promise((resolve, reject) => {
+    nativeFirstFrameResolve = resolve;
+    nativeFirstFrameReject = reject;
+  });
+  let framePending = false;
+  nativeFrameListener = await nativeScreenShare.addListener('frame', ({ frame, width, height } = {}) => {
+    if (generation !== screenShareGeneration || !frame || framePending) return;
+    framePending = true;
+    const image = new Image();
+    image.onload = () => {
+      framePending = false;
+      if (generation !== screenShareGeneration) return;
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      if (nativeFirstFrameResolve) {
+        nativeFirstFrameResolve(stream);
+        nativeFirstFrameResolve = null;
+        nativeFirstFrameReject = null;
+      }
+    };
+    image.onerror = () => {
+      framePending = false;
+      console.error('Could not decode an Android screen-share frame.');
+    };
+    image.src = 'data:image/jpeg;base64,' + frame;
+  });
+  nativeStoppedListener = await nativeScreenShare.addListener('stopped', () => {
+    if (nativeFirstFrameReject) {
+      nativeFirstFrameReject(new Error('Android screen capture stopped before the first frame.'));
+      nativeFirstFrameResolve = null;
+      nativeFirstFrameReject = null;
+    }
+    if (screenNativeCapture && screenStream) stopScreenShare(false);
+  });
+
+  await nativeScreenShare.startCapture();
+  let timeoutId;
+  try {
+    return await Promise.race([
+      firstFrame,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(
+      () => reject(new Error('Android screen capture did not provide a video frame in time.')),
+      12000,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function stopScreenShare(stopNativeCapture = true) {
   if (!screenSharing && !screenStream) return;
   const sender = screenSender;
   const originalTrack = screenOriginalTrack;
   const sharedTrack = screenTrack;
   const stream = screenStream;
+  const wasNativeCapture = screenNativeCapture;
   const activePC = pc;
   const target = peer;
   clearScreenShareState();
@@ -1024,6 +1142,10 @@ async function stopScreenShare() {
     if (stream) stream.getTracks().forEach((track) => {
       if (track.readyState !== 'ended') track.stop();
     });
+    if (wasNativeCapture && stopNativeCapture && nativeScreenShare) {
+      await nativeScreenShare.stopCapture().catch((e) =>
+        console.error('Could not stop Android screen capture:', e));
+    }
     if (target && socket.connected) socket.emit('screen-share-state', { to: target, sharing: false });
   }
 }
@@ -1038,6 +1160,14 @@ function clearScreenShareState() {
   screenOriginalTrack = null;
   screenTrack = null;
   screenEndedHandler = null;
+  screenNativeCapture = false;
+  if (nativeFirstFrameReject) nativeFirstFrameReject(new Error('Screen sharing was cancelled.'));
+  nativeFirstFrameResolve = null;
+  nativeFirstFrameReject = null;
+  if (nativeFrameListener) nativeFrameListener.remove();
+  if (nativeStoppedListener) nativeStoppedListener.remove();
+  nativeFrameListener = null;
+  nativeStoppedListener = null;
   $('localSharePreview').srcObject = null;
   $('callScreen').classList.remove('sharing-local');
   $('shareStatus').textContent = 'مشاركة الشاشة';
@@ -1139,6 +1269,12 @@ function cleanup() {
   clearTimeout(callTimer);
   clearInterval(timerInt); timerInt = null;
   if (screenSharing && peer && socket.connected) socket.emit('screen-share-state', { to: peer, sharing: false });
+  if (screenNativeCapture && nativeScreenShare) {
+    nativeScreenShare.stopCapture().catch((e) => console.error('Could not stop Android screen capture:', e));
+  }
+  screenShareGeneration++;
+  screenCaptureStarting = false;
+  $('shareBtn').disabled = false;
   if (screenStream) screenStream.getTracks().forEach((track) => {
     if (track.readyState !== 'ended') track.stop();
   });
