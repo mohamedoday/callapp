@@ -185,6 +185,15 @@ h2::after{content:"RECENT";font:10px ui-monospace,monospace;color:#728099;letter
 #callScreen.has-video.connected .ringwrap{display:none}
 #callScreen.has-video.connected .stage{min-height:140px;padding-bottom:32px;align-items:flex-start}
 #callScreen.has-video.connected #peerName{font-size:16px}
+#localSharePreview{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#03060b;opacity:0;pointer-events:none;z-index:1;transition:opacity .25s}
+#callScreen.sharing-local #localSharePreview{opacity:1}
+#callScreen.sharing-local #remote{opacity:0}
+#callScreen.sharing-local .stage{z-index:2}
+#callScreen.sharing-remote #remote{object-fit:contain;background:#03060b}
+#shareStatus{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));left:50%;z-index:6;display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid rgba(0,242,254,.28);border-radius:999px;background:rgba(5,12,21,.82);color:#c8faff;font-size:12px;box-shadow:0 8px 30px rgba(0,0,0,.28),0 0 22px rgba(0,242,254,.12);opacity:0;pointer-events:none;transform:translate(-50%,-8px);transition:opacity .2s,transform .2s}
+#shareStatus::before{content:"";width:8px;height:8px;border-radius:50%;background:#00f2fe;box-shadow:0 0 12px #00f2fe}
+#callScreen.sharing-local #shareStatus,#callScreen.sharing-remote #shareStatus{opacity:1;transform:translate(-50%,0)}
+#callScreen.sharing-local #shareStatus::before{background:#00ff88;box-shadow:0 0 12px #00ff88}
 #local{position:absolute;top:auto;left:auto;right:18px;bottom:calc(112px + env(safe-area-inset-bottom,0px));width:min(29vw,150px);max-width:150px;aspect-ratio:3/4;object-fit:cover;border:1px solid rgba(0,242,254,.7);border-radius:22px;background:#101722;box-shadow:0 0 0 1px rgba(255,255,255,.1),0 0 28px rgba(0,242,254,.2),0 18px 46px rgba(0,0,0,.5);z-index:5;transform:scaleX(-1);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;transition:box-shadow .2s,border-color .2s}
 #local:active{cursor:grabbing}
 #local.back{transform:none}
@@ -195,6 +204,8 @@ h2::after{content:"RECENT";font:10px ui-monospace,monospace;color:#728099;letter
 .cb i svg{width:21px;height:21px}
 .cb:active i{transform:scale(.88)}
 .cb.off i{background:rgba(255,255,255,.86);color:#0a0d14}
+.cb.share-active i{background:linear-gradient(145deg,#00f2fe,#00c6d4);border-color:rgba(0,242,254,.7);color:#04141b;box-shadow:0 0 24px rgba(0,242,254,.36)}
+.cb.share-unavailable{opacity:.52}
 .cb.end i{background:linear-gradient(145deg,#ff647e,#ed2455);border-color:rgba(255,255,255,.2);box-shadow:0 0 24px rgba(255,55,99,.32);color:#fff}
 #incoming{z-index:20;gap:14px;background:rgba(5,8,14,.82);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px)}
 #incoming .ringwrap{width:164px;height:164px;margin:0 0 15px}
@@ -273,6 +284,7 @@ html.native-android .owner-card{box-shadow:0 18px 55px rgba(0,0,0,.5),inset 0 1p
   <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/></symbol>
   <symbol id="i-micoff" viewBox="0 0 24 24"><path d="M2 2l20 20M9 9v2a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.9-.6M19 10v1a7 7 0 0 1-.9 3.4M5 10v1a7 7 0 0 0 11.1 5.7M12 18v4"/></symbol>
   <symbol id="i-flip" viewBox="0 0 24 24"><path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/><circle cx="12" cy="12" r="3"/><path d="m18 22-3-3 3-3M6 2l3 3-3 3"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M12 13V7m-3 3 3-3 3 3"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
 </defs></svg>
 
@@ -303,7 +315,9 @@ html.native-android .owner-card{box-shadow:0 18px 55px rgba(0,0,0,.5),inset 0 1p
 
 <section id="callScreen" class="screen">
   <video id="remote" autoplay playsinline muted></video>
+  <video id="localSharePreview" autoplay playsinline muted aria-label="معاينة مشاركة الشاشة"></video>
   <audio id="remoteAudio" autoplay></audio>
+  <div id="shareStatus" role="status" aria-live="polite">مشاركة الشاشة</div>
   <div class="stage" id="stage">
     <div class="ringwrap"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="av" id="callAv"></div></div>
     <div id="peerName"></div>
@@ -314,6 +328,7 @@ html.native-android .owner-card{box-shadow:0 18px 55px rgba(0,0,0,.5),inset 0 1p
     <button class="cb" id="micBtn" onclick="toggleMic()" aria-label="كتم أو تشغيل الميكروفون"><i><svg><use href="#i-mic"/></svg></i><span>الميكروفون</span></button>
     <button class="cb vbtn" id="camBtn" onclick="toggleCam()" aria-label="إيقاف أو تشغيل الكاميرا"><i><svg><use href="#i-video"/></svg></i><span>الكاميرا</span></button>
     <button class="cb vbtn" id="flipCamBtn" onclick="flipCam()" aria-label="تبديل الكاميرا"><i><svg><use href="#i-flip"/></svg></i><span>تبديل</span></button>
+    <button class="cb" id="shareBtn" onclick="toggleScreenShare()" aria-label="مشاركة الشاشة" aria-pressed="false" title="مشاركة الشاشة"><i><svg><use href="#i-share"/></svg></i><span>مشاركة</span></button>
     <button class="cb end" onclick="hangup()" aria-label="إنهاء المكالمة"><i><svg><use href="#i-phone"/></svg></i><span>إنهاء</span></button>
   </div>
 </section>
@@ -349,6 +364,7 @@ const capacitorPlatform = window.Capacitor && typeof window.Capacitor.getPlatfor
   ? window.Capacitor.getPlatform()
   : '';
 const isAndroidNative = capacitorPlatform === 'android';
+const isNativeApp = capacitorPlatform === 'android' || capacitorPlatform === 'ios';
 document.documentElement.classList.toggle('native-android', isAndroidNative);
 const HD_VIDEO_CONSTRAINTS = {
   width: { ideal: 1280 },
@@ -361,6 +377,10 @@ let me = null, peer = null, pc = null, localStream = null, remoteStream = null, 
 let pendingOffer = null, pendingCandidates = [], callTimer = null;
 let fcmToken = null, pushInit = false;
 let facing = 'user', timerInt = null, startedAt = 0;
+let screenStream = null, screenSender = null, screenOriginalTrack = null, screenTrack = null, screenEndedHandler = null, screenSharing = false;
+let makingOffer = false, ignoreOffer = false, isSettingRemoteAnswerPending = false;
+const canCaptureScreen = !isNativeApp && navigator.mediaDevices &&
+  typeof navigator.mediaDevices.getDisplayMedia === 'function';
 
 // ---- مساعدات الواجهة ----
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} }
@@ -580,6 +600,13 @@ document.addEventListener('visibilitychange', () => {
 $('usernameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') register(); });
 $('targetInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') startCall(true); });
 enablePipDragging();
+if (!canCaptureScreen) {
+  $('shareBtn').classList.add('share-unavailable');
+  $('shareBtn').title = isNativeApp
+    ? 'مشاركة الشاشة غير مدعومة داخل تطبيق الهاتف حالياً'
+    : 'استخدم متصفحاً يدعم مشاركة الشاشة';
+  $('shareBtn').querySelector('span').textContent = 'مشاركة';
+}
 
 // ---- الإشعارات (تطبيق الجوال فقط) ----
 async function initPush() {
@@ -728,15 +755,30 @@ function createPC() {
     if (s === 'disconnected') $('status').textContent = 'الاتصال ضعيف...';
     if (s === 'failed' || s === 'closed') cleanup();
   };
+
+  pc.onnegotiationneeded = async () => {
+    const activePC = pc;
+    if (!activePC || !peer || activePC.signalingState !== 'stable' || !activePC.remoteDescription) return;
+    try {
+      makingOffer = true;
+      await activePC.setLocalDescription();
+      if (pc === activePC) socket.emit('renegotiate-offer', { to: peer, offer: activePC.localDescription });
+    } catch (e) {
+      console.error('Call renegotiation failed:', e);
+      toast('تعذر تحديث اتصال المكالمة.');
+    } finally {
+      makingOffer = false;
+    }
+  };
 }
 
-async function configureVideoSender(sender) {
+async function configureVideoSender(sender, screenShare = false) {
   try {
     const parameters = sender.getParameters();
     if (!parameters.encodings || !parameters.encodings.length) parameters.encodings = [{}];
-    parameters.encodings[0].maxBitrate = MAX_VIDEO_BITRATE;
-    parameters.encodings[0].maxFramerate = 20;
-    parameters.degradationPreference = 'balanced';
+    parameters.encodings[0].maxBitrate = screenShare ? 2_500_000 : MAX_VIDEO_BITRATE;
+    parameters.encodings[0].maxFramerate = screenShare ? 30 : 20;
+    parameters.degradationPreference = screenShare ? 'maintain-resolution' : 'balanced';
     await sender.setParameters(parameters);
   } catch (e) {
     console.warn('Could not apply video performance limits; using browser defaults:', e);
@@ -828,6 +870,50 @@ socket.on('ice', async ({ candidate }) => {
   else pendingCandidates.push(candidate);
 });
 
+socket.on('renegotiate-offer', async ({ from, offer } = {}) => {
+  if (!pc || !peer || from !== peer || !offer) return;
+  const activePC = pc;
+  const polite = String(me || '').localeCompare(String(peer || '')) > 0;
+  const readyForOffer = !makingOffer &&
+    (activePC.signalingState === 'stable' || isSettingRemoteAnswerPending);
+  const offerCollision = offer.type === 'offer' && !readyForOffer;
+  ignoreOffer = !polite && offerCollision;
+  if (ignoreOffer) return;
+
+  try {
+    if (offerCollision) await activePC.setLocalDescription({ type: 'rollback' });
+    await activePC.setRemoteDescription(offer);
+    await flushCandidates();
+    const answer = await activePC.createAnswer();
+    await activePC.setLocalDescription(answer);
+    if (pc === activePC) socket.emit('renegotiate-answer', { to: peer, answer: activePC.localDescription });
+  } catch (e) {
+    console.error('Could not accept updated call offer:', e);
+    toast('تعذر تحديث اتصال المكالمة.');
+  }
+});
+
+socket.on('renegotiate-answer', async ({ from, answer } = {}) => {
+  if (!pc || from !== peer || !answer) return;
+  const activePC = pc;
+  try {
+    isSettingRemoteAnswerPending = true;
+    await activePC.setRemoteDescription(answer);
+    await flushCandidates();
+  } catch (e) {
+    console.error('Could not apply updated call answer:', e);
+    toast('تعذر إكمال تحديث اتصال المكالمة.');
+  } finally {
+    isSettingRemoteAnswerPending = false;
+  }
+});
+
+socket.on('screen-share-state', ({ from, sharing } = {}) => {
+  if (from !== peer) return;
+  $('callScreen').classList.toggle('sharing-remote', sharing === true);
+  $('shareStatus').textContent = sharing === true ? '@' + from + ' يشارك الشاشة' : 'مشاركة الشاشة';
+});
+
 socket.on('rejected', () => { cleanup(); toast('تم رفض المكالمة.'); });
 socket.on('hangup', () => {
   $('incoming').classList.remove('active');
@@ -838,6 +924,126 @@ socket.on('hangup', () => {
 function hangup() {
   if (peer) socket.emit('hangup', { to: peer });
   cleanup();
+}
+
+async function toggleScreenShare() {
+  if (screenSharing) {
+    await stopScreenShare();
+    return;
+  }
+  if (!pc || !peer) return toast('ابدأ مكالمة أولاً لمشاركة الشاشة.');
+  if (!canCaptureScreen) {
+    return toast(isNativeApp
+      ? 'مشاركة الشاشة غير مدعومة داخل تطبيق الهاتف حالياً. استخدم NOVA من متصفح كمبيوتر يدعمها.'
+      : 'هذا المتصفح لا يدعم مشاركة الشاشة. جرّب Chrome أو Edge على الكمبيوتر.');
+  }
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: { ideal: 15, max: 30 } },
+      audio: false,
+    });
+    const track = stream.getVideoTracks()[0];
+    if (!track) throw new Error('Screen capture returned no video track.');
+    track.contentHint = 'detail';
+
+    screenOriginalTrack = pc.getSenders().find(
+      (sender) => sender.track && sender.track.kind === 'video',
+    )?.track || null;
+    if (screenOriginalTrack) {
+      screenSender = pc.getSenders().find((sender) => sender.track === screenOriginalTrack);
+      await screenSender.replaceTrack(track);
+    } else {
+      screenSender = pc.addTrack(track, stream);
+    }
+    screenStream = stream;
+    screenTrack = track;
+    await configureVideoSender(screenSender, true);
+
+    const preview = $('localSharePreview');
+    preview.autoplay = true;
+    preview.playsInline = true;
+    preview.muted = true;
+    preview.srcObject = stream;
+    preview.play().catch((e) => console.warn('Local screen preview could not start:', e));
+
+    screenSharing = true;
+    screenEndedHandler = () => { stopScreenShare(); };
+    track.addEventListener('ended', screenEndedHandler, { once: true });
+    $('callScreen').classList.add('sharing-local');
+    $('callScreen').classList.remove('sharing-remote');
+    $('shareStatus').textContent = 'أنت تشارك الشاشة';
+    $('shareBtn').classList.add('share-active');
+    $('shareBtn').classList.remove('share-unavailable');
+    $('shareBtn').setAttribute('aria-pressed', 'true');
+    $('shareBtn').setAttribute('aria-label', 'إيقاف مشاركة الشاشة');
+    $('shareBtn').title = 'إيقاف مشاركة الشاشة';
+    $('shareBtn').querySelector('span').textContent = 'إيقاف';
+    socket.emit('screen-share-state', { to: peer, sharing: true });
+  } catch (e) {
+    console.error('Screen sharing could not start:', e);
+    if (screenSender && screenOriginalTrack && pc) {
+      await screenSender.replaceTrack(screenOriginalTrack).catch((restoreError) =>
+        console.error('Could not restore camera after screen-share failure:', restoreError));
+    } else if (screenSender && pc) {
+      pc.removeTrack(screenSender);
+    }
+    if (stream) stream.getTracks().forEach((track) => track.stop());
+    clearScreenShareState();
+    toast(e.name === 'NotAllowedError'
+      ? 'لم يتم السماح بمشاركة الشاشة.'
+      : 'تعذر بدء مشاركة الشاشة. حاول مرة أخرى.');
+  }
+}
+
+async function stopScreenShare() {
+  if (!screenSharing && !screenStream) return;
+  const sender = screenSender;
+  const originalTrack = screenOriginalTrack;
+  const sharedTrack = screenTrack;
+  const stream = screenStream;
+  const activePC = pc;
+  const target = peer;
+  clearScreenShareState();
+
+  try {
+    if (sender && activePC && originalTrack && originalTrack.readyState === 'live') {
+      await sender.replaceTrack(originalTrack);
+      await configureVideoSender(sender);
+    } else if (sender && activePC) {
+      activePC.removeTrack(sender);
+    }
+  } catch (e) {
+    console.error('Could not restore the camera after screen sharing:', e);
+    toast('توقفت مشاركة الشاشة، لكن تعذر استعادة الكاميرا.');
+  } finally {
+    if (sharedTrack && sharedTrack.readyState !== 'ended') sharedTrack.stop();
+    if (stream) stream.getTracks().forEach((track) => {
+      if (track.readyState !== 'ended') track.stop();
+    });
+    if (target && socket.connected) socket.emit('screen-share-state', { to: target, sharing: false });
+  }
+}
+
+function clearScreenShareState() {
+  if (screenTrack && screenEndedHandler) {
+    screenTrack.removeEventListener('ended', screenEndedHandler);
+  }
+  screenSharing = false;
+  screenStream = null;
+  screenSender = null;
+  screenOriginalTrack = null;
+  screenTrack = null;
+  screenEndedHandler = null;
+  $('localSharePreview').srcObject = null;
+  $('callScreen').classList.remove('sharing-local');
+  $('shareStatus').textContent = 'مشاركة الشاشة';
+  $('shareBtn').classList.remove('share-active');
+  $('shareBtn').setAttribute('aria-pressed', 'false');
+  $('shareBtn').setAttribute('aria-label', 'مشاركة الشاشة');
+  $('shareBtn').title = canCaptureScreen ? 'مشاركة الشاشة' : $('shareBtn').title;
+  $('shareBtn').querySelector('span').textContent = 'مشاركة';
 }
 
 function setBtn(btn, off, onIcon, offIcon) {
@@ -930,16 +1136,25 @@ async function flipCam() {
 function cleanup() {
   clearTimeout(callTimer);
   clearInterval(timerInt); timerInt = null;
+  if (screenSharing && peer && socket.connected) socket.emit('screen-share-state', { to: peer, sharing: false });
+  if (screenStream) screenStream.getTracks().forEach((track) => {
+    if (track.readyState !== 'ended') track.stop();
+  });
+  clearScreenShareState();
   if (pc) { pc.close(); pc = null; }
   if (localStream) { localStream.getTracks().forEach((t) => t.stop()); localStream = null; }
   remoteStream = null;
   $('remote').srcObject = null;
+  $('localSharePreview').srcObject = null;
   $('remoteAudio').srcObject = null;
   $('local').srcObject = null;
   $('local').classList.remove('back');
-  $('callScreen').classList.remove('has-video', 'connected', 'ringing');
+  $('callScreen').classList.remove('has-video', 'connected', 'ringing', 'sharing-remote');
   $('stage').classList.remove('ringing');
   facing = 'user';
+  makingOffer = false;
+  ignoreOffer = false;
+  isSettingRemoteAnswerPending = false;
   setBtn($('micBtn'), false, 'i-mic', 'i-micoff');
   setBtn($('camBtn'), false, 'i-video', 'i-vidoff');
   peer = null; pendingOffer = null; pendingCandidates = [];

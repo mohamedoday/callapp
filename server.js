@@ -118,6 +118,21 @@ io.on('connection', (socket) => {
     if (active) deliver(socket.username);
   });
 
+  socket.on('renegotiate-offer', ({ to, offer } = {}) => {
+    if (!socket.username || !offer) return;
+    relay(to, 'renegotiate-offer', { offer });
+  });
+
+  socket.on('renegotiate-answer', ({ to, answer } = {}) => {
+    if (!socket.username || !answer) return;
+    relay(to, 'renegotiate-answer', { answer });
+  });
+
+  socket.on('screen-share-state', ({ to, sharing } = {}) => {
+    if (!socket.username || typeof sharing !== 'boolean') return;
+    relay(to, 'screen-share-state', { sharing });
+  });
+
   socket.on('token', (t) => {
     if (socket.username && typeof t === 'string') {
       saveUser(socket.username, { fcmToken: t }).catch(console.error);
