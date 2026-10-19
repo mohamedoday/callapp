@@ -1,0 +1,13 @@
+{
+  "appId": "com.b7r.calls",
+  "appName": "Calls",
+  "webDir": "public",
+  "server": {
+    "url": "https://YOUR-APP.onrender.com"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

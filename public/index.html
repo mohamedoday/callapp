@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مكالمات</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #0f1115; color: #fff; font-family: system-ui, sans-serif; }
+  .screen { display: none; height: 100%; padding: 24px; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  .screen.active { display: flex; }
+  input { width: 100%; max-width: 320px; padding: 14px; border-radius: 12px; border: 1px solid #333; background: #1a1d24; color: #fff; font-size: 16px; text-align: center; }
+  button { padding: 14px 28px; border: 0; border-radius: 12px; font-size: 16px; cursor: pointer; color: #fff; background: #2f6fed; }
+  button.green { background: #1fa855; } button.red { background: #e5484d; }
+  #err, #homeErr { color: #ff7b7b; min-height: 20px; text-align: center; }
+  #callScreen { padding: 0; position: relative; justify-content: flex-start; }
+  #remote { width: 100%; height: 100%; object-fit: cover; background: #000; }
+  #local { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; width: 28vw; max-width: 140px; border-radius: 12px; border: 2px solid #fff3; background: #000; }
+  #controls { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 14px; }
+  #status { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; background: #0008; padding: 6px 12px; border-radius: 10px; }
+  #incoming { position: fixed; inset: 0; background: #000d; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px; z-index: 10; }
+  #incoming.active { display: flex; }
+  #incoming h2 { font-size: 24px; }
+  .row { display: flex; gap: 12px; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="screen active">
+  <h1>📞 مكالمات</h1>
+  <input id="usernameInput" placeholder="اختر اسم مستخدم (a-z 0-9 _)" autocapitalize="none" autocomplete="off">
+  <button onclick="register()">دخول</button>
+  <div id="err"></div>
+</div>
+
+<div id="homeScreen" class="screen">
+  <h2 id="meLabel"></h2>
+  <input id="targetInput" placeholder="اسم المستخدم اللي تبي تتصل فيه" autocapitalize="none" autocomplete="off">
+  <div class="row">
+    <button class="green" onclick="startCall(true)">📹 فيديو</button>
+    <button onclick="startCall(false)">🎤 صوت</button>
+  </div>
+  <div id="homeErr"></div>
+</div>
+
+<div id="callScreen" class="screen">
+  <video id="remote" autoplay playsinline></video>
+  <video id="local" autoplay playsinline muted></video>
+  <div id="status">...</div>
+  <div id="controls">
+    <button onclick="toggleMic()" id="micBtn">🎤</button>
+    <button onclick="toggleCam()" id="camBtn">📹</button>
+    <button class="red" onclick="hangup()">إنهاء</button>
+  </div>
+</div>
+
+<div id="incoming">
+  <h2 id="incomingText"></h2>
+  <div class="row">
+    <button class="green" onclick="acceptCall()">قبول</button>
+    <button class="red" onclick="rejectCall()">رفض</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const $ = (id) => document.getElementById(id);
+
+let me = null, peer = null, pc = null, localStream = null;
+let pendingOffer = null, pendingCandidates = [], callTimer = null;
+let fcmToken = null, pushInit = false;
+
+// ---- هوية الجهاز (تمنع أحد يسرق اسمك) ----
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} }
+let secret = store('secret');
+if (!secret) {
+  secret = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
+  store('secret', secret);
+}
+
+// ---- إعدادات ICE (STUN + TURN من السيرفر) ----
+let ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+fetch('/ice').then((r) => r.json()).then((s) => { ICE = { iceServers: s }; }).catch(() => {});
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+// ---- تسجيل الدخول ----
+const errText = (e) => e === 'taken' ? 'الاسم مستخدم' : e === 'server' ? 'خطأ في السيرفر' : 'الاسم غير صالح (3-20 حرف: a-z 0-9 _)';
+
+function register() {
+  login($('usernameInput').value.trim().toLowerCase(), false);
+}
+
+function login(name, silent) {
+  socket.emit('register', { name, secret }, (res) => {
+    if (!res.ok) {
+      if (silent) { me = null; try { localStorage.removeItem('name'); } catch (e) {} show('loginScreen'); }
+      $('err').textContent = errText(res.error);
+      return;
+    }
+    me = res.name;
+    store('name', me);
+    $('meLabel').textContent = '@' + me;
+    if (!pc) show('homeScreen');
+    if (fcmToken) socket.emit('token', fcmToken);
+    initPush();
+  });
+}
+
+// دخول تلقائي + إعادة تسجيل عند انقطاع/رجوع الاتصال
+socket.on('connect', () => {
+  const n = me || store('name');
+  if (n) login(n, true);
+});
+
+// ---- الإشعارات (تطبيق الجوال فقط) ----
+async function initPush() {
+  const Push = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+  if (!Push || pushInit) return;
+  pushInit = true;
+  try {
+    await Push.createChannel({ id: 'calls', name: 'المكالمات', importance: 5, visibility: 1, vibration: true });
+    const perm = await Push.requestPermissions();
+    if (perm.receive !== 'granted') return;
+    Push.addListener('registration', (t) => { fcmToken = t.value; socket.emit('token', fcmToken); });
+    Push.addListener('registrationError', (e) => console.log('push error', JSON.stringify(e)));
+    await Push.register();
+  } catch (e) { console.log('push init failed', e); }
+}
+
+// ---- WebRTC ----
+async function getMedia(video) {
+  localStream = await navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: video ? { facingMode: 'user' } : false,
+  });
+  $('local').srcObject = localStream;
+  $('local').style.display = video ? 'block' : 'none';
+}
+
+function createPC() {
+  pc = new RTCPeerConnection(ICE);
+  localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+  pc.ontrack = (e) => { $('remote').srcObject = e.streams[0]; };
+  pc.onicecandidate = (e) => {
+    if (e.candidate) socket.emit('ice', { to: peer, candidate: e.candidate });
+  };
+  pc.onconnectionstatechange = () => {
+    const s = pc.connectionState;
+    $('status').textContent = s === 'connected' ? '🟢 متصل' : s;
+    if (s === 'connected') clearTimeout(callTimer);
+    if (s === 'failed' || s === 'closed') cleanup();
+  };
+}
+
+async function flushCandidates() {
+  for (const c of pendingCandidates) await pc.addIceCandidate(c).catch(() => {});
+  pendingCandidates = [];
+}
+
+async function startCall(video) {
+  const target = $('targetInput').value.trim().toLowerCase();
+  $('homeErr').textContent = '';
+  if (!target) return;
+  try {
+    await getMedia(video);
+  } catch (e) {
+    $('homeErr').textContent = 'ما قدرت أوصل للمايك/الكاميرا';
+    return;
+  }
+  peer = target;
+  createPC();
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  show('callScreen');
+  $('status').textContent = 'جاري الاتصال...';
+  socket.emit('call', { to: target, offer }, (res) => {
+    if (!res.ok) {
+      cleanup();
+      $('homeErr').textContent =
+        res.error === 'offline' ? 'المستخدم غير متصل' :
+        res.error === 'notfound' ? 'اسم المستخدم غير موجود' : 'خطأ';
+      return;
+    }
+    if (res.pushed) $('status').textContent = 'جاري الرنين على جواله...';
+    callTimer = setTimeout(() => {
+      if (pc && pc.connectionState !== 'connected') {
+        hangup();
+        $('homeErr').textContent = 'ما رد';
+      }
+    }, 60000);
+  });
+}
+
+// ---- استقبال مكالمة ----
+socket.on('incoming', ({ from, offer }) => {
+  if (pc) return socket.emit('reject', { to: from }); // مشغول
+  peer = from;
+  pendingOffer = offer;
+  $('incomingText').textContent = '📞 مكالمة من @' + from;
+  $('incoming').classList.add('active');
+  if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
+});
+
+async function acceptCall() {
+  $('incoming').classList.remove('active');
+  try {
+    await getMedia(true);
+  } catch (e) {
+    try { await getMedia(false); } catch (e2) { return rejectCall(); }
+  }
+  createPC();
+  await pc.setRemoteDescription(pendingOffer);
+  await flushCandidates();
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  socket.emit('answer', { to: peer, answer });
+  show('callScreen');
+}
+
+function rejectCall() {
+  $('incoming').classList.remove('active');
+  socket.emit('reject', { to: peer });
+  peer = null; pendingOffer = null; pendingCandidates = [];
+}
+
+socket.on('answer', async ({ answer }) => {
+  if (!pc) return;
+  await pc.setRemoteDescription(answer);
+  await flushCandidates();
+});
+
+socket.on('ice', async ({ candidate }) => {
+  if (pc && pc.remoteDescription) await pc.addIceCandidate(candidate).catch(() => {});
+  else pendingCandidates.push(candidate);
+});
+
+socket.on('rejected', () => { cleanup(); $('homeErr').textContent = 'تم رفض المكالمة'; });
+socket.on('hangup', () => {
+  $('incoming').classList.remove('active');
+  cleanup();
+});
+
+// ---- تحكم ----
+function hangup() {
+  if (peer) socket.emit('hangup', { to: peer });
+  cleanup();
+}
+
+function toggleMic() {
+  const t = localStream && localStream.getAudioTracks()[0];
+  if (t) { t.enabled = !t.enabled; $('micBtn').textContent = t.enabled ? '🎤' : '🔇'; }
+}
+function toggleCam() {
+  const t = localStream && localStream.getVideoTracks()[0];
+  if (t) { t.enabled = !t.enabled; $('camBtn').textContent = t.enabled ? '📹' : '🚫'; }
+}
+
+function cleanup() {
+  clearTimeout(callTimer);
+  if (pc) { pc.close(); pc = null; }
+  if (localStream) { localStream.getTracks().forEach((t) => t.stop()); localStream = null; }
+  $('remote').srcObject = null;
+  $('local').srcObject = null;
+  $('micBtn').textContent = '🎤';
+  $('camBtn').textContent = '📹';
+  peer = null; pendingOffer = null; pendingCandidates = [];
+  if (me) show('homeScreen');
+}
+</script>
+</body>
+</html>
