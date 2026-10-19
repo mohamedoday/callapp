@@ -311,15 +311,31 @@ async function getMedia(video) {
 
 function createPC() {
   pc = new RTCPeerConnection(ICE);
-  localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+  
+  // Add local tracks to the connection
+  if (localStream) {
+    localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+  }
+
   pc.ontrack = (e) => {
+    console.log('Remote track received');
     const s = e.streams[0];
-    $('remote').srcObject = s;
+    if (!s) return;
+    
+    // Force the remote video element to use this stream
+    const remoteVid = $('remote');
+    remoteVid.srcObject = s;
+    
+    // Some browsers require calling play() explicitly
+    remoteVid.play().catch(err => console.log('Autoplay prevented:', err));
+    
     $('callScreen').classList.toggle('has-video', s.getVideoTracks().length > 0);
   };
+  
   pc.onicecandidate = (e) => {
     if (e.candidate) socket.emit('ice', { to: peer, candidate: e.candidate });
   };
+  
   pc.onconnectionstatechange = () => {
     const s = pc.connectionState;
     if (s === 'connected') markConnected();
@@ -347,7 +363,7 @@ async function startCall(video) {
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   openCallUI(target, 'جاري الاتصال...');
-  socket.emit('call', { to: target, offer }, (res) => {
+  socket.emit('call', { to: target, offer, video }, (res) => {
     if (!res.ok) {
       cleanup();
       toast(res.error === 'offline' ? 'المستخدم غير متصل حالياً.' :
@@ -366,10 +382,11 @@ async function startCall(video) {
 }
 
 // ---- استقبال مكالمة ----
-socket.on('incoming', ({ from, offer }) => {
+socket.on('incoming', ({ from, offer, video }) => {
   if (pc) return socket.emit('reject', { to: from }); // مشغول
   peer = from;
   pendingOffer = offer;
+  pendingVideo = video;
   $('incName').textContent = '@' + from;
   paint($('incAv'), from);
   $('incoming').classList.add('active');
@@ -379,7 +396,7 @@ socket.on('incoming', ({ from, offer }) => {
 async function acceptCall() {
   $('incoming').classList.remove('active');
   try {
-    await getMedia(true);
+    await getMedia(pendingVideo);
   } catch (e) {
     try { await getMedia(false); } catch (e2) { toast('ما قدرت أوصل للمايك أو الكاميرا.'); return rejectCall(); }
   }
