@@ -85,11 +85,13 @@ setInterval(() => {
 }, 30000);
 
 io.on('connection', (socket) => {
-  io.on('connection', (socket) => {
-    const relay = (to, event, data) => {
-      const id = online.get(lc(to));
-      if (id) io.to(id).emit(event, { sender: socket.username, ...data });
-    };
+  const relay = (to, event, data) => {
+    const id = online.get(lc(to));
+    const sender = socket.username;
+    if (id) io.to(id).emit(event, { sender, from: sender, ...data });
+  };
+
+  socket.on('register', async (payload, cb) => {
   socket.on('register', async (payload, cb) => {
     if (typeof cb !== 'function') return;
     try {
