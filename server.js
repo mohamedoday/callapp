@@ -172,7 +172,7 @@ io.on('connection', (socket) => {
           await messaging.send({
             token: user.fcmToken,
             notification: { title: '📞 مكالمة واردة', body: '@' + from + ' يتصل بك' },
-            android: { priority: 'high', notification: { channelId: 'calls', sound: 'default' } },
+            android: { priority: 'high', ttl: 30000, notification: { channelId: 'calls_v2', sound: 'ringtone' } },
             data: { type: 'incoming_call', sender: from, video: payload.video === true ? 'true' : 'false' },
           });
           pushed = true;
