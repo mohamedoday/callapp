@@ -61,11 +61,11 @@ const pending = new Map(); // callee -> { sender, offer, video, ice[], t, delive
 function deliver(name) {
   const p = pending.get(name);
   const id = online.get(name);
-  const recipient = id & io.sockets.sockets.get(id);
+  const recipient = id && io.sockets.sockets.get(id);
   if (!p || !recipient || recipient.inForeground === false || p.delivered) return;
   if (Date.now() - p.t > 60000) return pending.delete(name);
-  recipient.emit('incoming', { from: p.sender, offer: p.offer, video: p.video });
-  p.ice.forEach(c => recipient.emit('ice', { from: p.sender, candidate: c }));
+  recipient.emit('incoming', { from: p.from, sender: p.from, offer: p.offer, video: p.video });
+  p.ice.forEach(c => recipient.emit('ice', { from: p.from, sender: p.from, candidate: c }));
   p.delivered = true;
   p.ice = [];
 }
@@ -90,8 +90,6 @@ io.on('connection', (socket) => {
     const sender = socket.username;
     if (id) io.to(id).emit(event, { sender, from: sender, ...data });
   };
-
-  socket.on('register', async (payload, cb) => {
   socket.on('register', async (payload, cb) => {
     if (typeof cb !== 'function') return;
     try {
@@ -175,7 +173,7 @@ io.on('connection', (socket) => {
             token: user.fcmToken,
             notification: { title: '📞 مكالمة واردة', body: '@' + from + ' يتصل بك' },
             android: { priority: 'high', notification: { channelId: 'calls', sound: 'default' } },
-            data: { type: 'incoming_call', from, video: payload.video === true ? 'true' : 'false' },
+            data: { type: 'incoming_call', sender: from, video: payload.video === true ? 'true' : 'false' },
           });
           pushed = true;
         } catch (e) {
@@ -224,7 +222,7 @@ io.on('connection', (socket) => {
       if (p.from === name) {
         pending.delete(callee);
         const id = online.get(callee);
-        if (p.delivered && id) io.to(id).emit('hangup', { from: name });
+        if (p.delivered && id) io.to(id).emit('hangup', { from: name, sender: name });
       }
     }
   });
@@ -232,4 +230,3 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log('Server running on port ' + PORT));
-}
