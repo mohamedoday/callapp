@@ -62,7 +62,7 @@ function deliver(name) {
   const p = pending.get(name);
   const id = online.get(name);
   const recipient = id & io.sockets.sockets.get(id);
-  if (!p  !recipient  recipient.inForeground === false || p.delivered) return;
+  if (!p || !recipient || recipient.inForeground === false || p.delivered) return;
   if (Date.now() - p.t > 60000) return pending.delete(name);
   recipient.emit('incoming', { from: p.sender, offer: p.offer, video: p.video });
   p.ice.forEach(c => recipient.emit('ice', { from: p.sender, candidate: c }));
