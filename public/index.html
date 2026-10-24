@@ -273,6 +273,104 @@ html.native-android.call-active #local{box-shadow:0 0 0 1px rgba(255,255,255,.12
 html.native-android #ownerNotice{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(3,6,12,.88)}
 html.native-android .owner-card{box-shadow:0 18px 55px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.1)}
 @media(prefers-reduced-motion:reduce){#ownerNotice.active,.owner-card{animation:none}}
+
+/* Immersive in-call layout */
+#callScreen{--aqua:#5eead4;--pink:#f472b6;width:min(100%,520px);margin-inline:auto;overflow:hidden;isolation:isolate;background:radial-gradient(100% 70% at 50% 0%,#1b1a52 0%,#0b0d24 68%,#080a16 100%);padding:calc(24px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px))}
+#callScreen::before,#callScreen::after{content:"";position:absolute;inset:-15%;z-index:-1;pointer-events:none;border-radius:50%;filter:blur(54px);opacity:.55}
+#callScreen::before{background:radial-gradient(ellipse at 22% 25%,#4338ca99 0,transparent 36%),radial-gradient(ellipse at 76% 55%,#5eead455 0,transparent 30%);animation:call-aurora 17s ease-in-out infinite alternate}
+#callScreen::after{inset:30% -25% -25%;background:radial-gradient(ellipse at 70% 65%,#f472b64d 0,transparent 36%);animation:call-aurora 23s ease-in-out infinite alternate-reverse}
+@keyframes call-aurora{to{transform:translate3d(3%,-2%,0) scale(1.08)}}
+.call-top{position:absolute;top:calc(24px + env(safe-area-inset-top,0px));left:16px;right:16px;z-index:4;display:flex;justify-content:center;pointer-events:none}
+.secure-pill{display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid rgba(94,234,212,.22);border-radius:999px;background:rgba(11,13,36,.68);color:#d7fff7;font-size:12px;box-shadow:0 8px 26px #05060f44,inset 0 1px #ffffff12}
+.secure-pill svg{width:15px;height:15px;color:var(--aqua)}
+.call-stage{position:absolute;inset:0;z-index:1;min-height:0;align-items:center;justify-content:center;gap:12px;padding:76px 20px 176px;text-align:center;background:none}
+.call-stage .ringwrap{width:210px;height:210px;margin:0 0 8px}
+.call-stage .ring{inset:0;border-width:1.5px;border-color:var(--aqua)}
+.call-stage .ring:nth-child(2){border-color:var(--pink)}
+.call-stage .ring:nth-child(3){border-color:#a5b4fc}
+.call-stage .ringwrap .av{width:142px;height:142px;border:4px solid rgba(255,255,255,.2);font-size:58px;background:linear-gradient(145deg,#171a45,#242052);box-shadow:0 0 60px rgba(94,234,212,.25),inset 0 0 0 2px rgba(255,255,255,.08)}
+#peerName{font-size:30px;font-weight:800;letter-spacing:.01em;text-shadow:0 2px 22px #05060f99}
+#status{min-height:24px;color:var(--aqua);font-size:16px;font-weight:500;text-shadow:0 2px 14px #05060f99}
+#callScreen.connected #status{color:#c8fff1}
+.call-wave{display:flex;align-items:center;justify-content:center;gap:4px;height:32px;margin-top:2px;opacity:.88}
+.call-wave b{width:4px;height:7px;border-radius:4px;background:linear-gradient(var(--aqua),var(--pink));animation:call-eq .9s ease-in-out infinite alternate}
+.call-wave b:nth-child(2n){animation-duration:.7s}
+.call-wave b:nth-child(3n){animation-duration:1.15s}
+.call-wave b:nth-child(1){animation-delay:-.2s}.call-wave b:nth-child(2){animation-delay:-.55s}.call-wave b:nth-child(3){animation-delay:-.35s}.call-wave b:nth-child(4){animation-delay:-.7s}.call-wave b:nth-child(5){animation-delay:-.1s}.call-wave b:nth-child(6){animation-delay:-.85s}.call-wave b:nth-child(7){animation-delay:-.4s}.call-wave b:nth-child(8){animation-delay:-.65s}.call-wave b:nth-child(9){animation-delay:-.3s}
+@keyframes call-eq{to{height:29px}}
+#callScreen.muted .call-wave b{height:5px;opacity:.36;animation-play-state:paused}
+#callScreen.has-video.connected .call-stage{inset:0 0 auto 0;align-items:flex-start;justify-content:flex-start;padding:calc(72px + env(safe-area-inset-top,0px)) 24px 36px;background:linear-gradient(180deg,rgba(7,8,24,.66),rgba(7,8,24,.2) 70%,transparent);text-align:right}
+#callScreen.has-video.connected .call-stage .ringwrap{display:none}
+#callScreen.has-video.connected #peerName{font-size:24px}
+#callScreen.has-video.connected #status{font-size:14px}
+#callScreen.has-video.connected .call-wave{display:none}
+#callScreen.sharing-local .call-stage{display:none}
+#callScreen.sharing-local.has-video.connected .call-stage{display:flex}
+#callScreen .dock{left:14px;right:14px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:auto;max-width:none;transform:none;display:flex;justify-content:space-around;align-items:center;gap:2px;padding:14px 8px 11px;border:1px solid rgba(255,255,255,.14);border-radius:30px;background:rgba(19,21,56,.9);box-shadow:0 20px 54px #03040e77,inset 0 1px #ffffff17;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+#callScreen .cb{flex:1 1 0;min-width:0;gap:7px;color:#f4f5ff;font-size:10px;line-height:1.2;text-shadow:none;white-space:nowrap}
+#callScreen .cb span{display:block;width:100%;min-height:1.2em;overflow:hidden;text-align:center;text-overflow:ellipsis}
+#callScreen .cb i{width:52px;height:52px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);box-shadow:inset 0 1px #ffffff18}
+#callScreen .cb svg{width:23px;height:23px}
+#callScreen .cb.off i{background:#f4f5ff;color:#171936;border-color:#fff}
+#callScreen .cb.speaker-active i{background:rgba(94,234,212,.22);border-color:rgba(94,234,212,.65);color:#aaffef;box-shadow:0 0 20px rgba(94,234,212,.16),inset 0 1px #ffffff18}
+#callScreen .cb.end i{background:linear-gradient(135deg,#ff5c7c,var(--danger));border:0;color:#fff;box-shadow:0 10px 28px rgba(255,61,99,.4)}
+#callScreen .cb.share-active i{background:linear-gradient(145deg,#5eead4,#35d6a4);color:#09251d}
+#callScreen .cb.share-unavailable{opacity:.52}
+#callScreen #local{top:calc(78px + env(safe-area-inset-top,0px));left:16px;right:auto;width:min(27vw,126px);max-width:126px;aspect-ratio:3/4;border:1.5px solid rgba(255,255,255,.42);border-radius:20px;box-shadow:0 10px 30px #0008}
+#callScreen #camSettingsBtn{display:none;position:fixed;top:0;left:0;transform:translate(0,0);z-index:7;width:32px;height:32px;place-items:center;border:1px solid #ffffff50;border-radius:50%;background:rgba(8,12,20,.82);color:#fff;box-shadow:0 4px 14px #0008}
+#callScreen #camSettingsBtn svg{width:18px;height:18px}
+#callScreen.has-local-camera #camSettingsBtn{display:grid}
+#callScreen.sharing-local #camSettingsBtn{display:none}
+#callScreen #camSettingsBtn:focus-visible{outline:2px solid var(--aqua);outline-offset:3px}
+#callScreen #localSharePreview{z-index:1}
+#callScreen #shareStatus{top:calc(28px + env(safe-area-inset-top,0px));left:50%;right:auto;border:1px solid rgba(94,234,212,.3);border-radius:999px;background:rgba(11,13,36,.82);color:#d7fff7;box-shadow:0 8px 28px #0005}
+#callScreen #shareStatus::before{background:var(--aqua);box-shadow:0 0 12px var(--aqua)}
+#callScreen.sharing-local #shareStatus::before{background:#00ff88;box-shadow:0 0 12px #00ff88}
+#speakerBtn{display:none}
+html.native-android #speakerBtn{display:flex}
+#callScreen .cb:focus-visible{outline:2px solid var(--aqua);outline-offset:3px;border-radius:14px}
+#callScreen #connectionHint{position:absolute;left:50%;top:calc(62px + env(safe-area-inset-top,0px));z-index:4;max-width:calc(100% - 32px);padding:7px 12px;border:1px solid rgba(255,193,112,.28);border-radius:999px;background:rgba(36,25,12,.84);color:#ffe0ad;font-size:12px;line-height:1.4;text-align:center;transform:translateX(-50%)}
+#callScreen #connectionHint:empty{display:none}
+#callScreen.has-video.connected #connectionHint{top:calc(110px + env(safe-area-inset-top,0px));left:auto;right:16px;transform:none}
+html:not(.native-android) #callScreen .dock{left:clamp(14px,5vw,32px);right:clamp(14px,5vw,32px)}
+@media(min-width:600px){#callScreen{height:min(100%,960px);border:1px solid rgba(255,255,255,.08);border-radius:32px;box-shadow:0 28px 100px #0009}.call-stage{padding-bottom:190px}#callScreen .dock{bottom:24px}}
+@media(max-width:380px){#callScreen .dock{left:8px;right:8px;gap:0;padding:12px 5px 9px}#callScreen .cb i{width:44px;height:44px}#callScreen .cb{font-size:9px;gap:6px}.call-stage .ringwrap{transform:scale(.88)}}
+@media(max-height:700px){.call-stage{gap:6px;padding-top:70px;padding-bottom:158px}.call-stage .ringwrap{width:164px;height:164px}.call-stage .ringwrap .av{width:120px;height:120px}#callScreen.has-video.connected .call-stage{padding-top:calc(66px + env(safe-area-inset-top,0px))}#callScreen .dock{padding-top:9px;padding-bottom:7px}#callScreen .cb i{width:46px;height:46px}.call-wave{height:24px}#callScreen .secure-pill{padding:7px 11px}}
+@media(max-height:580px){.call-stage{padding-top:58px;padding-bottom:136px}.call-stage .ringwrap{width:132px;height:132px;margin-bottom:2px}.call-stage .ringwrap .av{width:104px;height:104px;font-size:46px}#peerName{font-size:24px}.call-wave{height:18px}#callScreen .dock{bottom:calc(8px + env(safe-area-inset-bottom,0px));padding:7px 6px 5px}#callScreen .cb i{width:40px;height:40px}#callScreen .cb svg{width:20px;height:20px}}
+@media(prefers-reduced-motion:reduce){#callScreen::before,#callScreen::after,.call-wave b,.ringing .ring{animation:none}}
+#cameraSettings{position:fixed;inset:0;z-index:25;display:none;place-items:center;padding:20px;background:rgba(3,6,14,.72)}
+#cameraSettings.active{display:grid}
+.camera-settings-card{width:min(100%,380px);padding:22px;border:1px solid rgba(255,255,255,.16);border-radius:26px;background:linear-gradient(150deg,#171d31,#0b101b);box-shadow:0 24px 80px #000a,inset 0 1px #ffffff14}
+.camera-settings-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.camera-settings-heading h2{font-size:20px}
+.camera-settings-heading h2::after{display:none;content:none}
+.camera-settings-heading p{margin-top:4px;color:#a9b5c8;font-size:12px}
+.camera-settings-close{display:grid;place-items:center;flex:none;width:40px;height:40px;border:1px solid #ffffff20;border-radius:50%;background:#ffffff0c}
+.camera-settings-close svg{width:20px;height:20px}
+.camera-settings-group{margin-top:18px}
+.camera-settings-label{display:block;margin-bottom:9px;color:#dce5f5;font-size:13px;font-weight:600}
+.camera-setting-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.camera-setting-options.fps-options{grid-template-columns:repeat(4,minmax(0,1fr))}
+.camera-setting-option{min-height:52px;padding:9px 6px;border:1px solid #ffffff19;border-radius:15px;background:#ffffff08;color:#e9f0fb;font-size:13px}
+.camera-setting-option small{display:block;margin-top:3px;color:#a9b5c8;font-size:10px}
+.camera-setting-option[aria-checked="true"]{border-color:#5eead4a8;background:rgba(94,234,212,.13);color:#b8fff0;box-shadow:inset 0 0 0 1px #5eead430}
+.camera-settings-note{margin-top:14px;color:#a9b5c8;font-size:11px;line-height:1.6}
+.camera-settings-actions{display:flex;gap:10px;margin-top:20px}
+.camera-settings-actions button{flex:1;min-height:48px;border-radius:15px;font-size:14px;font-weight:600}
+.camera-settings-cancel{border:1px solid #ffffff20;background:#ffffff09}
+.camera-settings-apply{background:linear-gradient(110deg,#5eead4,#35d6a4);color:#08251e}
+html.native-android #cameraSettings{backdrop-filter:none;-webkit-backdrop-filter:none}
+@media(max-width:350px){.camera-settings-card{padding:18px}.camera-settings-option{font-size:12px}}
+#permissionDialog{position:fixed;inset:0;z-index:40;display:none;place-items:center;padding:20px;background:rgba(3,6,14,.78)}
+#permissionDialog.active{display:grid}
+#shareBtn[hidden]{display:none!important}
+.permission-dialog-card{width:min(100%,380px);padding:24px;border:1px solid rgba(255,255,255,.16);border-radius:26px;background:linear-gradient(150deg,#171d31,#0b101b);box-shadow:0 24px 80px #000a,inset 0 1px #ffffff14}
+.permission-dialog-card h2{margin-bottom:10px;font-size:20px}
+.permission-dialog-card p{color:#a9b5c8;font-size:14px;line-height:1.7}
+.permission-dialog-actions{display:flex;gap:10px;margin-top:20px}
+.permission-dialog-actions button{flex:1;min-height:46px;padding:10px;border:1px solid #ffffff20;border-radius:15px;background:#ffffff09;color:#e9f0fb;font-size:13px;font-weight:600}
+.permission-dialog-actions button:first-child{border:0;background:linear-gradient(110deg,#5eead4,#35d6a4);color:#08251e}
+#permissionDialogCancel[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -283,6 +381,9 @@ html.native-android .owner-card{box-shadow:0 18px 55px rgba(0,0,0,.5),inset 0 1p
   <symbol id="i-vidoff" viewBox="0 0 24 24"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.7 0H14a2 2 0 0 1 2 2v3.3l1 1L23 7v10M1 1l22 22"/></symbol>
   <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/></symbol>
   <symbol id="i-micoff" viewBox="0 0 24 24"><path d="M2 2l20 20M9 9v2a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.9-.6M19 10v1a7 7 0 0 1-.9 3.4M5 10v1a7 7 0 0 0 11.1 5.7M12 18v4"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4zM17 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4L17 17.4a7.7 7.7 0 0 1-2.1.9v.2a1.7 1.7 0 1 1-3.4 0v-.2a7.7 7.7 0 0 1-2.1-.9l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a7.7 7.7 0 0 1-.9-2.1h-.2a1.7 1.7 0 1 1 0-3.4h.2a7.7 7.7 0 0 1 .9-2.1l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a7.7 7.7 0 0 1 2.1-.9v-.2a1.7 1.7 0 1 1 3.4 0v.2a7.7 7.7 0 0 1 2.1.9l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a7.7 7.7 0 0 1 .9 2.1h.2a1.7 1.7 0 1 1 0 3.4h-.2a7.7 7.7 0 0 1-.9 2.1z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
   <symbol id="i-flip" viewBox="0 0 24 24"><path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/><circle cx="12" cy="12" r="3"/><path d="m18 22-3-3 3-3M6 2l3 3-3 3"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M12 13V7m-3 3 3-3 3 3"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
@@ -318,20 +419,55 @@ html.native-android .owner-card{box-shadow:0 18px 55px rgba(0,0,0,.5),inset 0 1p
   <video id="localSharePreview" autoplay playsinline muted aria-label="معاينة مشاركة الشاشة"></video>
   <audio id="remoteAudio" autoplay></audio>
   <div id="shareStatus" role="status" aria-live="polite">مشاركة الشاشة</div>
-  <div class="stage" id="stage">
+  <div class="call-top"><div class="secure-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3"/><rect x="5" y="10" width="14" height="11" rx="2"/><path d="m10 15 1.5 1.5L14.5 13"/></svg><span>مكالمة مشفّرة</span></div></div>
+  <div class="stage call-stage" id="stage">
     <div class="ringwrap"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="av" id="callAv"></div></div>
-    <div id="peerName"></div>
-    <div id="status"></div>
+    <h1 id="peerName"></h1>
+    <div id="status" role="status" aria-live="polite"></div>
+    <div class="call-wave" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div>
   </div>
+  <div id="connectionHint" role="status" aria-live="polite"></div>
   <video id="local" autoplay playsinline muted aria-label="معاينة الكاميرا المحلية"></video>
+  <button id="camSettingsBtn" type="button" onclick="openCameraSettings()" aria-label="إعدادات الكاميرا" title="إعدادات الكاميرا"><svg><use href="#i-settings"/></svg></button>
   <div class="dock">
-    <button class="cb" id="micBtn" onclick="toggleMic()" aria-label="كتم أو تشغيل الميكروفون"><i><svg><use href="#i-mic"/></svg></i><span>الميكروفون</span></button>
-    <button class="cb vbtn" id="camBtn" onclick="toggleCam()" aria-label="إيقاف أو تشغيل الكاميرا"><i><svg><use href="#i-video"/></svg></i><span>الكاميرا</span></button>
+    <button class="cb" id="micBtn" onclick="toggleMic()" aria-label="كتم أو تشغيل الميكروفون" aria-pressed="false"><i><svg><use href="#i-mic"/></svg></i><span>كتم</span></button>
+    <button class="cb" id="speakerBtn" onclick="toggleSpeaker()" aria-label="تشغيل مكبر الصوت" aria-pressed="false"><i><svg><use href="#i-speaker"/></svg></i><span>مكبر</span></button>
+    <button class="cb vbtn" id="camBtn" onclick="toggleCam()" aria-label="إيقاف الكاميرا" aria-pressed="false"><i><svg><use href="#i-video"/></svg></i><span>فيديو</span></button>
     <button class="cb vbtn" id="flipCamBtn" onclick="flipCam()" aria-label="تبديل الكاميرا"><i><svg><use href="#i-flip"/></svg></i><span>تبديل</span></button>
     <button class="cb" id="shareBtn" onclick="toggleScreenShare()" aria-label="مشاركة الشاشة" aria-pressed="false" title="مشاركة الشاشة"><i><svg><use href="#i-share"/></svg></i><span>مشاركة</span></button>
     <button class="cb end" onclick="hangup()" aria-label="إنهاء المكالمة"><i><svg><use href="#i-phone"/></svg></i><span>إنهاء</span></button>
   </div>
 </section>
+
+<div id="cameraSettings" onclick="if(event.target===this) closeCameraSettings()" role="presentation">
+  <section class="camera-settings-card" role="dialog" aria-modal="true" aria-labelledby="cameraSettingsTitle" aria-describedby="cameraSettingsNote">
+    <div class="camera-settings-heading">
+      <div><h2 id="cameraSettingsTitle">إعدادات الكاميرا</h2><p>اختر جودة الفيديو المناسبة لاتصالك.</p></div>
+      <button class="camera-settings-close" type="button" onclick="closeCameraSettings()" aria-label="إغلاق الإعدادات"><svg><use href="#i-close"/></svg></button>
+    </div>
+    <div class="camera-settings-group">
+      <span class="camera-settings-label">دقة الفيديو</span>
+      <div class="camera-setting-options" role="radiogroup" aria-label="دقة الفيديو">
+        <button class="camera-setting-option" type="button" role="radio" data-camera-resolution="720p" aria-checked="true" onclick="selectCameraSetting(this)">720p<small>HD</small></button>
+        <button class="camera-setting-option" type="button" role="radio" data-camera-resolution="1080p" aria-checked="false" onclick="selectCameraSetting(this)">1080p<small>Full HD</small></button>
+      </div>
+    </div>
+    <div class="camera-settings-group">
+      <span class="camera-settings-label">معدل الإطارات</span>
+      <div class="camera-setting-options fps-options" role="radiogroup" aria-label="معدل الإطارات">
+        <button class="camera-setting-option" type="button" role="radio" data-camera-fps="15" aria-checked="false" onclick="selectCameraSetting(this)">15<small>fps</small></button>
+        <button class="camera-setting-option" type="button" role="radio" data-camera-fps="20" aria-checked="true" onclick="selectCameraSetting(this)">20<small>fps</small></button>
+        <button class="camera-setting-option" type="button" role="radio" data-camera-fps="24" aria-checked="false" onclick="selectCameraSetting(this)">24<small>fps</small></button>
+        <button class="camera-setting-option" type="button" role="radio" data-camera-fps="30" aria-checked="false" onclick="selectCameraSetting(this)">30<small>fps</small></button>
+      </div>
+    </div>
+    <p class="camera-settings-note" id="cameraSettingsNote">قد تختلف الجودة الفعلية حسب إمكانيات الكاميرا وسرعة الاتصال.</p>
+    <div class="camera-settings-actions">
+      <button class="camera-settings-cancel" type="button" onclick="closeCameraSettings()">إلغاء</button>
+      <button class="camera-settings-apply" id="applyCameraSettingsBtn" type="button" onclick="applyCameraSettings()">تطبيق</button>
+    </div>
+  </section>
+</div>
 
 <div id="incoming">
   <div class="ringwrap ringing"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="av" id="incAv"></div></div>
@@ -344,6 +480,17 @@ html.native-android .owner-card{box-shadow:0 18px 55px rgba(0,0,0,.5),inset 0 1p
 </div>
 
 <div id="toast" role="status"></div>
+
+<div id="permissionDialog" role="dialog" aria-modal="true" aria-labelledby="permissionDialogTitle" aria-describedby="permissionDialogMessage">
+  <section class="permission-dialog-card">
+    <h2 id="permissionDialogTitle"></h2>
+    <p id="permissionDialogMessage"></p>
+    <div class="permission-dialog-actions">
+      <button id="permissionDialogConfirm" type="button" onclick="resolvePermissionDialog(true)"></button>
+      <button id="permissionDialogCancel" type="button" onclick="resolvePermissionDialog(false)"></button>
+    </div>
+  </section>
+</div>
 
 <div id="ownerNotice" role="dialog" aria-modal="true" aria-labelledby="ownerNoticeTitle" aria-describedby="ownerNoticeDescription">
   <div class="owner-card">
@@ -364,39 +511,328 @@ const capacitorPlatform = window.Capacitor && typeof window.Capacitor.getPlatfor
   ? window.Capacitor.getPlatform()
   : '';
 const isAndroidNative = capacitorPlatform === 'android';
-const isNativeApp = capacitorPlatform === 'android' || capacitorPlatform === 'ios';
+const isNativeApp = Boolean(
+  window.Capacitor &&
+  ((typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
+    capacitorPlatform === 'android' || capacitorPlatform === 'ios'),
+);
 const nativeScreenShare = window.Capacitor && window.Capacitor.Plugins
   ? window.Capacitor.Plugins.NativeScreenShare
   : null;
 document.documentElement.classList.toggle('native-android', isAndroidNative);
-const HD_VIDEO_CONSTRAINTS = {
-  width: { ideal: 1280 },
-  height: { ideal: 720 },
-  frameRate: { ideal: 20, max: 24 },
-};
-const MAX_VIDEO_BITRATE = 1_200_000;
+const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const CAMERA_SETTINGS_KEY = 'nova-camera-settings';
+const CAMERA_FRAME_RATES = [15, 20, 24, 30];
 
-let me = null, peer = null, pc = null, localStream = null, remoteStream = null, flippingCamera = false;
+let me = null, peer = null, pc = null, localStream = null, remoteStream = null, flippingCamera = false, speakerEnabled = false;
+let cameraSettings = { resolution: '720p', frameRate: 20 };
+let pendingCameraSettings = null, cameraSettingsReturnFocus = null;
 let pendingOffer = null, pendingCandidates = [], callTimer = null;
 let fcmToken = null, pushInit = false;
 let facing = 'user', timerInt = null, startedAt = 0;
-let screenStream = null, screenSender = null, screenOriginalTrack = null, screenTrack = null, screenEndedHandler = null, screenSharing = false;
+let screenStream = null, screenSender = null, screenOriginalTrack = null, screenTrack = null, screenEndedHandler = null, screenSharing = false, screenAudioSenders = [];
 let makingOffer = false, ignoreOffer = false, isSettingRemoteAnswerPending = false;
 let screenNativeCapture = false, nativeFrameListener = null, nativeStoppedListener = null;
 let nativeFirstFrameResolve = null, nativeFirstFrameReject = null, screenShareGeneration = 0, screenCaptureStarting = false;
 const canCaptureScreen = Boolean(
-  !isNativeApp && navigator.mediaDevices &&
+  !isNativeApp && !isMobileBrowser && navigator.mediaDevices &&
   typeof navigator.mediaDevices.getDisplayMedia === 'function',
 );
 
 // ---- مساعدات الواجهة ----
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} }
+function loadCameraSettings() {
+  try {
+    const saved = localStorage.getItem(CAMERA_SETTINGS_KEY);
+    if (!saved) return;
+    const parsed = JSON.parse(saved);
+    if (
+      parsed &&
+      (parsed.resolution === '720p' || parsed.resolution === '1080p') &&
+      CAMERA_FRAME_RATES.includes(parsed.frameRate)
+    ) {
+      cameraSettings = { resolution: parsed.resolution, frameRate: parsed.frameRate };
+    } else {
+      console.warn('Ignoring invalid saved camera settings.');
+    }
+  } catch (e) {
+    console.error('Could not load saved camera settings:', e);
+  }
+}
+function saveCameraSettings(settings) {
+  try {
+    localStorage.setItem(CAMERA_SETTINGS_KEY, JSON.stringify(settings));
+    return true;
+  } catch (e) {
+    console.error('Could not save camera settings:', e);
+    return false;
+  }
+}
+loadCameraSettings();
+
+function getCameraVideoConstraints(settings = cameraSettings, facingMode) {
+  const dimensions = settings.resolution === '1080p'
+    ? { width: { ideal: 1920 }, height: { ideal: 1080 } }
+    : { width: { ideal: 1280 }, height: { ideal: 720 } };
+  return {
+    ...(facingMode ? { facingMode } : {}),
+    ...dimensions,
+    frameRate: { ideal: settings.frameRate, max: settings.frameRate },
+  };
+}
+
+function syncCameraSettingsOptions() {
+  if (!pendingCameraSettings) return;
+  document.querySelectorAll('[data-camera-resolution]').forEach((button) => {
+    button.setAttribute('aria-checked', String(button.dataset.cameraResolution === pendingCameraSettings.resolution));
+  });
+  document.querySelectorAll('[data-camera-fps]').forEach((button) => {
+    button.setAttribute('aria-checked', String(Number(button.dataset.cameraFps) === pendingCameraSettings.frameRate));
+  });
+}
+
+function selectCameraSetting(button) {
+  if (!pendingCameraSettings || !button) return;
+  if (button.dataset.cameraResolution) pendingCameraSettings.resolution = button.dataset.cameraResolution;
+  if (button.dataset.cameraFps) pendingCameraSettings.frameRate = Number(button.dataset.cameraFps);
+  syncCameraSettingsOptions();
+}
+
+function syncCameraSettingsButton() {
+  const video = $('local');
+  const button = $('camSettingsBtn');
+  if (!video || video.style.display === 'none') return;
+  const rect = video.getBoundingClientRect();
+  button.style.left = `${Math.max(6, Math.min(window.innerWidth - 38, rect.right - 38))}px`;
+  button.style.top = `${Math.max(6, rect.top + 6)}px`;
+}
+
+function openCameraSettings() {
+  pendingCameraSettings = { ...cameraSettings };
+  syncCameraSettingsOptions();
+  cameraSettingsReturnFocus = document.activeElement;
+  $('cameraSettings').classList.add('active');
+  document.querySelector('#cameraSettings [aria-checked="true"]').focus();
+}
+
+function closeCameraSettings() {
+  $('cameraSettings').classList.remove('active');
+  pendingCameraSettings = null;
+  if (cameraSettingsReturnFocus && typeof cameraSettingsReturnFocus.focus === 'function') {
+    cameraSettingsReturnFocus.focus();
+  }
+  cameraSettingsReturnFocus = null;
+}
+
+async function applyCameraSettings() {
+  if (!pendingCameraSettings) return;
+  if (screenSharing) return toast('أوقف مشاركة الشاشة أولاً لتغيير إعدادات الكاميرا.');
+
+  const applyButton = $('applyCameraSettingsBtn');
+  const nextSettings = { ...pendingCameraSettings };
+  const activeTrack = localStream && localStream.getVideoTracks().find((track) => track.readyState === 'live');
+  applyButton.disabled = true;
+  try {
+    if (activeTrack) {
+      if (typeof activeTrack.applyConstraints !== 'function') {
+        throw new Error('Changing camera constraints is not supported by this device.');
+      }
+      await activeTrack.applyConstraints(getCameraVideoConstraints(nextSettings));
+    }
+    cameraSettings = nextSettings;
+    const saved = saveCameraSettings(cameraSettings);
+    if (activeTrack) {
+      const sender = pc && pc.getSenders().find((item) => item.track === activeTrack);
+      if (sender) await configureVideoSender(sender);
+    }
+    closeCameraSettings();
+    if (!saved) {
+      toast('تم تطبيق الإعدادات، لكن تعذر حفظها للمكالمة القادمة.');
+      return;
+    }
+    if (activeTrack) {
+      const actual = activeTrack.getSettings();
+      const dimensions = actual.width && actual.height ? `${actual.width}×${actual.height}` : cameraSettings.resolution;
+      const frameRate = actual.frameRate ? Math.round(actual.frameRate) : cameraSettings.frameRate;
+      toast(`إعداد الكاميرا: ${dimensions}، ${frameRate} إطار/ث`);
+    } else {
+      toast('ستُطبق إعدادات الكاميرا عند بدء مكالمة فيديو.');
+    }
+  } catch (e) {
+    console.error('Could not apply camera settings:', e);
+    toast('تعذر تطبيق هذه الإعدادات على الكاميرا. جرّب جودة أقل.');
+  } finally {
+    applyButton.disabled = false;
+  }
+}
+
+document.addEventListener('keydown', (event) => {
+  const panel = $('cameraSettings');
+  if (!panel.classList.contains('active')) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeCameraSettings();
+    return;
+  }
+  if (event.key === 'Tab') {
+    const focusable = [...panel.querySelectorAll('button:not(:disabled)')];
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+    return;
+  }
+  if (!event.target.matches('[role="radio"]') || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+  const group = event.target.closest('[role="radiogroup"]');
+  const options = [...group.querySelectorAll('[role="radio"]')];
+  const index = options.indexOf(event.target);
+  const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+  const next = options[(index + direction + options.length) % options.length];
+  event.preventDefault();
+  selectCameraSetting(next);
+  next.focus();
+});
 function toast(msg) {
   const t = $('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toast._t);
   toast._t = setTimeout(() => t.classList.remove('show'), 3200);
+}
+let permissionDialogResolve = null;
+function showPermissionDialog(title, message, confirmText, cancelText = '') {
+  const dialog = $('permissionDialog');
+  $('permissionDialogTitle').textContent = title;
+  $('permissionDialogMessage').textContent = message;
+  $('permissionDialogConfirm').textContent = confirmText;
+  $('permissionDialogCancel').textContent = cancelText;
+  $('permissionDialogCancel').hidden = !cancelText;
+  dialog.classList.add('active');
+  $('permissionDialogConfirm').focus();
+  return new Promise((resolve) => { permissionDialogResolve = resolve; });
+}
+function resolvePermissionDialog(confirmed) {
+  if (!permissionDialogResolve) return;
+  const resolve = permissionDialogResolve;
+  permissionDialogResolve = null;
+  $('permissionDialog').classList.remove('active');
+  resolve(confirmed);
+}
+async function queryMediaPermission(name) {
+  if (!navigator.permissions || typeof navigator.permissions.query !== 'function') return 'unknown';
+  try {
+    const permission = await navigator.permissions.query({ name });
+    return permission.state;
+  } catch (error) {
+    console.info(`Permission status for ${name} is not supported; using getUserMedia directly.`, error);
+    return 'unknown';
+  }
+}
+function mediaErrorMessage(error, device) {
+  const name = error && error.name;
+  if (name === 'SecurityError') {
+    return 'يلزم فتح CallApp عبر اتصال آمن HTTPS لاستخدام الميكروفون والكاميرا.';
+  }
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+    return device === 'microphone'
+      ? 'لم يُسمح باستخدام الميكروفون. اسمح به من إعدادات الموقع أو الجهاز ثم حاول مجددًا.'
+      : 'لم يُسمح باستخدام الكاميرا. ستستمر المكالمة بالصوت فقط.';
+  }
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+    return device === 'microphone'
+      ? 'لم يتم العثور على ميكروفون متصل. وصّل ميكروفونًا ثم حاول مجددًا.'
+      : 'لم يتم العثور على كاميرا. ستستمر المكالمة بالصوت فقط.';
+  }
+  if (name === 'NotReadableError' || name === 'TrackStartError') {
+    return device === 'microphone'
+      ? 'الميكروفون قيد الاستخدام أو تعذّر تشغيله. أغلق التطبيقات الأخرى التي تستخدمه ثم حاول مجددًا.'
+      : 'الكاميرا قيد الاستخدام أو تعذّر تشغيلها. أغلق التطبيقات الأخرى التي تستخدمها؛ ستستمر المكالمة بالصوت فقط.';
+  }
+  if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+    return device === 'microphone'
+      ? 'إعدادات الميكروفون غير مدعومة على هذا الجهاز.'
+      : 'إعدادات الفيديو المطلوبة غير مدعومة. ستستمر المكالمة بالصوت فقط.';
+  }
+  return device === 'microphone'
+    ? 'تعذّر تشغيل الميكروفون. تحقق من توصيله وإعدادات الجهاز ثم حاول مجددًا.'
+    : 'تعذّر تشغيل الكاميرا. ستستمر المكالمة بالصوت فقط.';
+}
+function permissionSettingsInstructions(device) {
+  const name = device === 'microphone' ? 'الميكروفون' : 'الكاميرا';
+  if (isNativeApp) {
+    return isAndroidNative
+      ? `لتفعيل ${name}، افتح إعدادات الجهاز > التطبيقات > CallApp > الأذونات، ثم اسمح باستخدام ${name}.`
+      : `لتفعيل ${name}، افتح إعدادات iPhone > CallApp، ثم اسمح باستخدام ${name}.`;
+  }
+  return `لتفعيل ${name}، افتح إعدادات الموقع من رمز القفل بجانب عنوان الصفحة، واسمح باستخدام ${name}. تأكد من فتح الموقع عبر HTTPS.`;
+}
+async function showSettingsDialog(device, continueAudio = false) {
+  const message = permissionSettingsInstructions(device);
+  if (continueAudio) {
+    return showPermissionDialog(
+      'الكاميرا غير متاحة',
+      `${message} يمكنك متابعة المكالمة بالصوت فقط.`,
+      'متابعة صوت فقط',
+      'إلغاء المكالمة',
+    );
+  }
+  await showPermissionDialog('يلزم السماح بالميكروفون', message, 'حسنًا');
+  return false;
+}
+function showCallMediaRationale(video) {
+  const cameraText = video
+    ? ' الكاميرا اختيارية؛ إذا لم تسمح بها فستستمر المكالمة بالصوت فقط.'
+    : '';
+  return showPermissionDialog(
+    'السماح بالوصول إلى الميكروفون',
+    `يحتاج CallApp إلى الميكروفون حتى يسمعك الطرف الآخر.${cameraText} سيظهر طلب الإذن من المتصفح أو الجهاز بعد المتابعة.`,
+    'متابعة',
+    'ليس الآن',
+  );
+}
+async function acquireCameraTrack() {
+  let cameraStream = null;
+  let captureError = null;
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: getCameraVideoConstraints(cameraSettings, { ideal: facing }),
+    });
+  } catch (error) {
+    captureError = error;
+    if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+      } catch (fallbackError) {
+        captureError = fallbackError;
+      }
+    }
+  }
+  if (!cameraStream) {
+    if (captureError.name === 'NotAllowedError' || captureError.name === 'PermissionDeniedError') {
+      if (await showSettingsDialog('camera', true)) return null;
+      const cancelled = new Error('Permission flow cancelled.');
+      cancelled.code = 'USER_CANCELLED';
+      throw cancelled;
+    }
+    toast(mediaErrorMessage(captureError, 'camera'));
+    return null;
+  }
+  const track = cameraStream.getVideoTracks()[0];
+  if (!track) {
+    cameraStream.getTracks().forEach((item) => item.stop());
+    toast(mediaErrorMessage({ name: 'NotFoundError' }, 'camera'));
+    return null;
+  }
+  track.contentHint = 'motion';
+  console.info('Camera capture settings:', track.getSettings());
+  return track;
 }
 function paint(el, name) {
   const h = [...name].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % 360;
@@ -501,6 +937,7 @@ function enablePipDragging() {
         if (!pendingPosition) return;
         video.style.left = pendingPosition.left + 'px';
         video.style.top = pendingPosition.top + 'px';
+        syncCameraSettingsButton();
         pendingPosition = null;
       });
     }
@@ -519,16 +956,19 @@ function enablePipDragging() {
       video.style.top = pendingPosition.top + 'px';
       pendingPosition = null;
     }
+    syncCameraSettingsButton();
   };
   video.addEventListener('pointerup', release);
   video.addEventListener('pointercancel', release);
 
   window.addEventListener('resize', () => {
-    if (!video.style.left || video.style.display === 'none') return;
-    const maxLeft = Math.max(8, window.innerWidth - video.offsetWidth - 8);
-    const maxTop = Math.max(8, window.innerHeight - video.offsetHeight - 8);
-    video.style.left = Math.min(maxLeft, Math.max(8, parseFloat(video.style.left))) + 'px';
-    video.style.top = Math.min(maxTop, Math.max(8, parseFloat(video.style.top))) + 'px';
+    if (video.style.left && video.style.display !== 'none') {
+      const maxLeft = Math.max(8, window.innerWidth - video.offsetWidth - 8);
+      const maxTop = Math.max(8, window.innerHeight - video.offsetHeight - 8);
+      video.style.left = Math.min(maxLeft, Math.max(8, parseFloat(video.style.left))) + 'px';
+      video.style.top = Math.min(maxTop, Math.max(8, parseFloat(video.style.top))) + 'px';
+    }
+    syncCameraSettingsButton();
   });
 }
 
@@ -607,12 +1047,8 @@ document.addEventListener('visibilitychange', () => {
 $('usernameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') register(); });
 $('targetInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') startCall(true); });
 enablePipDragging();
-if (!canCaptureScreen && !(isAndroidNative && nativeScreenShare)) {
-  $('shareBtn').classList.add('share-unavailable');
-  $('shareBtn').title = isNativeApp
-    ? 'مشاركة الشاشة غير متاحة في هذا الإصدار'
-    : 'استخدم متصفحاً يدعم مشاركة الشاشة';
-  $('shareBtn').querySelector('span').textContent = 'مشاركة';
+if (!canCaptureScreen) {
+  $('shareBtn').hidden = true;
 }
 
 // ---- الإشعارات (تطبيق الجوال فقط) ----
@@ -654,18 +1090,22 @@ async function initPush() {
 // ---- شاشة المكالمة ----
 function openCallUI(name, label) {
   const cs = $('callScreen');
-  cs.classList.remove('has-video', 'connected');
+  cs.classList.remove('has-video', 'connected', 'muted');
   cs.classList.add('ringing');
   $('stage').classList.add('ringing');
+  $('connectionHint').textContent = '';
   $('peerName').textContent = '@' + name;
   paint($('callAv'), name);
   $('status').textContent = label;
+  $('status').setAttribute('aria-live', 'polite');
   show('callScreen');
 }
 function markConnected() {
   const cs = $('callScreen');
   cs.classList.add('connected');
   $('stage').classList.remove('ringing');
+  $('connectionHint').textContent = '';
+  $('status').setAttribute('aria-live', 'off');
   clearTimeout(callTimer);
   if (timerInt) return;
   startedAt = Date.now();
@@ -679,26 +1119,75 @@ function markConnected() {
 
 // ---- WebRTC ----
 async function getMedia(video) {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: video ? {
-      facingMode: { ideal: facing },
-      ...HD_VIDEO_CONSTRAINTS,
-    } : false,
-  });
-  const videoTrack = stream.getVideoTracks()[0];
-  if (videoTrack) {
-    videoTrack.contentHint = 'motion';
-    console.info('Camera capture settings:', videoTrack.getSettings());
+  if (window.isSecureContext === false) {
+    toast('يلزم فتح CallApp عبر اتصال آمن HTTPS لاستخدام الميكروفون والكاميرا.');
+    throw new Error('Media capture requires a secure context.');
   }
+  if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+    toast('هذا المتصفح لا يدعم الوصول إلى الميكروفون والكاميرا.');
+    throw new Error('getUserMedia is not available.');
+  }
+
+  const microphonePermission = await queryMediaPermission('microphone');
+  const cameraPermission = video ? await queryMediaPermission('camera') : 'unknown';
+  if (microphonePermission === 'denied') {
+    await showSettingsDialog('microphone');
+    throw new Error('Microphone permission is blocked.');
+  }
+  const needsPermissionPrompt = microphonePermission !== 'granted' ||
+    (video && cameraPermission !== 'granted' && cameraPermission !== 'denied');
+  if (needsPermissionPrompt && !await showCallMediaRationale(video)) {
+    const cancelled = new Error('Permission flow cancelled.');
+    cancelled.code = 'USER_CANCELLED';
+    throw cancelled;
+  }
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  } catch (error) {
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      await showSettingsDialog('microphone');
+    } else {
+      toast(mediaErrorMessage(error, 'microphone'));
+    }
+    throw error;
+  }
+  if (!stream.getAudioTracks().length) {
+    stream.getTracks().forEach((track) => track.stop());
+    toast('لم يتم العثور على مسار صوت من الميكروفون. تحقق من الجهاز وحاول مجددًا.');
+    throw new Error('No microphone track was returned.');
+  }
+
+  if (video) {
+    let videoTrack = null;
+    if (cameraPermission === 'denied') {
+      if (!await showSettingsDialog('camera', true)) {
+        stream.getTracks().forEach((track) => track.stop());
+        const cancelled = new Error('Permission flow cancelled.');
+        cancelled.code = 'USER_CANCELLED';
+        throw cancelled;
+      }
+    } else {
+      try {
+        videoTrack = await acquireCameraTrack();
+      } catch (error) {
+        stream.getTracks().forEach((track) => track.stop());
+        throw error;
+      }
+    }
+    if (videoTrack) stream.addTrack(videoTrack);
+  }
+
   if (localStream) localStream.getTracks().forEach((track) => track.stop());
   localStream = stream;
+  const hasVideo = stream.getVideoTracks().some((track) => track.readyState === 'live');
   const localVideo = $('local');
   localVideo.autoplay = true;
   localVideo.playsInline = true;
   localVideo.muted = true;
   localVideo.srcObject = stream;
-  if (video) {
+  if (hasVideo) {
     try {
       await localVideo.play();
     } catch (e) {
@@ -706,8 +1195,10 @@ async function getMedia(video) {
       toast('تعذر تشغيل معاينة الكاميرا. تحقق من صلاحية الكاميرا.');
     }
   }
-  $('local').style.display = video ? 'block' : 'none';
-  document.body.classList.toggle('audio-only', !video);
+  $('local').style.display = hasVideo ? 'block' : 'none';
+  $('callScreen').classList.toggle('has-local-camera', hasVideo);
+  if (hasVideo) requestAnimationFrame(syncCameraSettingsButton);
+  document.body.classList.toggle('audio-only', !hasVideo);
 }
 
 function createPC() {
@@ -759,7 +1250,7 @@ function createPC() {
   pc.onconnectionstatechange = () => {
     const s = pc.connectionState;
     if (s === 'connected') markConnected();
-    if (s === 'disconnected') $('status').textContent = 'الاتصال ضعيف...';
+    if (s === 'disconnected') $('connectionHint').textContent = 'الاتصال ضعيف، جارٍ محاولة الاستعادة…';
     if (s === 'failed' || s === 'closed') cleanup();
   };
 
@@ -783,8 +1274,8 @@ async function configureVideoSender(sender, screenShare = false) {
   try {
     const parameters = sender.getParameters();
     if (!parameters.encodings || !parameters.encodings.length) parameters.encodings = [{}];
-    parameters.encodings[0].maxBitrate = screenShare ? 2_500_000 : MAX_VIDEO_BITRATE;
-    parameters.encodings[0].maxFramerate = screenShare ? 30 : 20;
+    parameters.encodings[0].maxBitrate = screenShare || cameraSettings.resolution === '1080p' ? 2_500_000 : 1_200_000;
+    parameters.encodings[0].maxFramerate = screenShare ? 30 : cameraSettings.frameRate;
     parameters.degradationPreference = screenShare ? 'maintain-resolution' : 'balanced';
     await sender.setParameters(parameters);
   } catch (e) {
@@ -804,7 +1295,8 @@ async function startCall(video) {
   try {
     await getMedia(video);
   } catch (e) {
-    return toast('ما قدرت أوصل للمايك أو الكاميرا. اسمح بالصلاحية من إعدادات الجهاز.');
+    if (e.code !== 'USER_CANCELLED') console.error('Call media setup failed:', e);
+    return;
   }
   peer = target;
   createPC();
@@ -847,8 +1339,14 @@ async function acceptCall() {
   $('incoming').classList.remove('active');
   try {
     await getMedia(pendingVideo);
-  } catch (e) {
-    try { await getMedia(false); } catch (e2) { toast('ما قدرت أوصل للمايك أو الكاميرا.'); return rejectCall(); }
+  } catch (error) {
+    if (error.code === 'USER_CANCELLED') {
+      $('incoming').classList.add('active');
+      return;
+    }
+    console.error('Could not prepare media for the incoming call:', error);
+    rejectCall();
+    return;
   }
   createPC();
   await pc.setRemoteDescription(pendingOffer);
@@ -935,6 +1433,7 @@ function hangup() {
 
 async function toggleScreenShare() {
   if (screenCaptureStarting) return;
+  if (flippingCamera) return toast('انتظر حتى يكتمل تبديل الكاميرا ثم حاول مشاركة الشاشة.');
   if (screenSharing) {
     await stopScreenShare();
     return;
@@ -955,8 +1454,8 @@ async function toggleScreenShare() {
     stream = isAndroidNative
       ? await startNativeScreenCapture(generation)
       : await navigator.mediaDevices.getDisplayMedia({
-          video: { frameRate: { ideal: 15, max: 30 } },
-          audio: false,
+          video: true,
+          audio: true,
         });
     if (generation !== screenShareGeneration || !pc || !peer) {
       stream.getTracks().forEach((track) => track.stop());
@@ -976,6 +1475,10 @@ async function toggleScreenShare() {
     } else {
       screenSender = pc.addTrack(track, stream);
     }
+    screenAudioSenders = [];
+    stream.getAudioTracks().forEach((audioTrack) => {
+      screenAudioSenders.push(pc.addTrack(audioTrack, stream));
+    });
     screenStream = stream;
     screenTrack = track;
     screenNativeCapture = isAndroidNative;
@@ -990,8 +1493,8 @@ async function toggleScreenShare() {
 
     screenSharing = true;
     if (!screenNativeCapture) {
-      screenEndedHandler = () => { stopScreenShare(); };
-      track.addEventListener('ended', screenEndedHandler, { once: true });
+      screenEndedHandler = () => { void stopScreenShare(); };
+      track.onended = screenEndedHandler;
     }
     $('callScreen').classList.add('sharing-local');
     $('callScreen').classList.remove('sharing-remote');
@@ -1020,14 +1523,21 @@ async function toggleScreenShare() {
     } else if (screenSender && pc) {
       pc.removeTrack(screenSender);
     }
+    if (pc) screenAudioSenders.forEach((sender) => pc.removeTrack(sender));
+    screenAudioSenders = [];
     if (stream) stream.getTracks().forEach((track) => track.stop());
     if (isAndroidNative && nativeScreenShare) {
       await nativeScreenShare.stopCapture().catch((stopError) =>
         console.error('Could not stop failed Android capture:', stopError));
     }
     clearScreenShareState();
+    if (e.name === 'NotAllowedError' && !isNativeApp) return;
     toast(e.code === 'CAPTURE_DENIED' || e.name === 'NotAllowedError'
       ? 'لم يتم السماح بمشاركة الشاشة.'
+      : e.name === 'NotFoundError'
+        ? 'لم يتم العثور على مصدر شاشة للمشاركة.'
+        : e.name === 'NotReadableError'
+          ? 'تعذرت قراءة الشاشة. أغلق التطبيقات الأخرى التي تستخدمها ثم حاول مجددًا.'
       : e.code === 'CAPTURE_UNAVAILABLE'
         ? 'مشاركة الشاشة غير متاحة على هذا الجهاز.'
         : 'تعذر بدء مشاركة الشاشة. حاول مرة أخرى.');
@@ -1122,6 +1632,7 @@ async function stopScreenShare(stopNativeCapture = true) {
   const originalTrack = screenOriginalTrack;
   const sharedTrack = screenTrack;
   const stream = screenStream;
+  const audioSenders = screenAudioSenders;
   const wasNativeCapture = screenNativeCapture;
   const activePC = pc;
   const target = peer;
@@ -1134,6 +1645,7 @@ async function stopScreenShare(stopNativeCapture = true) {
     } else if (sender && activePC) {
       activePC.removeTrack(sender);
     }
+    if (activePC) audioSenders.forEach((audioSender) => activePC.removeTrack(audioSender));
   } catch (e) {
     console.error('Could not restore the camera after screen sharing:', e);
     toast('توقفت مشاركة الشاشة، لكن تعذر استعادة الكاميرا.');
@@ -1151,15 +1663,14 @@ async function stopScreenShare(stopNativeCapture = true) {
 }
 
 function clearScreenShareState() {
-  if (screenTrack && screenEndedHandler) {
-    screenTrack.removeEventListener('ended', screenEndedHandler);
-  }
+  if (screenTrack && screenEndedHandler && screenTrack.onended === screenEndedHandler) screenTrack.onended = null;
   screenSharing = false;
   screenStream = null;
   screenSender = null;
   screenOriginalTrack = null;
   screenTrack = null;
   screenEndedHandler = null;
+  screenAudioSenders = [];
   screenNativeCapture = false;
   if (nativeFirstFrameReject) nativeFirstFrameReject(new Error('Screen sharing was cancelled.'));
   nativeFirstFrameResolve = null;
@@ -1184,13 +1695,45 @@ function setBtn(btn, off, onIcon, offIcon) {
 }
 function toggleMic() {
   const t = localStream && localStream.getAudioTracks()[0];
-  if (t) { t.enabled = !t.enabled; setBtn($('micBtn'), !t.enabled, 'i-mic', 'i-micoff'); }
+  if (t) {
+    t.enabled = !t.enabled;
+    setBtn($('micBtn'), !t.enabled, 'i-mic', 'i-micoff');
+    $('callScreen').classList.toggle('muted', !t.enabled);
+    $('micBtn').querySelector('span').textContent = t.enabled ? 'كتم' : 'إلغاء الكتم';
+    $('micBtn').setAttribute('aria-pressed', String(!t.enabled));
+  }
+}
+async function toggleSpeaker() {
+  const next = !speakerEnabled;
+  if (!nativeScreenShare || !isAndroidNative) {
+    return toast('تغيير مخرج الصوت غير متاح في هذا المتصفح.');
+  }
+  try {
+    await nativeScreenShare.setSpeaker({ enabled: next });
+    speakerEnabled = next;
+    $('speakerBtn').classList.toggle('speaker-active', next);
+    $('speakerBtn').setAttribute('aria-pressed', String(next));
+    $('speakerBtn').setAttribute('aria-label', next ? 'إيقاف مكبر الصوت' : 'تشغيل مكبر الصوت');
+    $('speakerBtn').querySelector('span').textContent = next ? 'السماعة تعمل' : 'السماعة';
+  } catch (e) {
+    console.error('Could not change Android call audio route:', e);
+    toast('تعذر تغيير مخرج الصوت.');
+  }
 }
 function toggleCam() {
   const t = localStream && localStream.getVideoTracks()[0];
-  if (t) { t.enabled = !t.enabled; setBtn($('camBtn'), !t.enabled, 'i-video', 'i-vidoff'); }
+  if (t) {
+    t.enabled = !t.enabled;
+    setBtn($('camBtn'), !t.enabled, 'i-video', 'i-vidoff');
+    $('camBtn').setAttribute('aria-pressed', String(!t.enabled));
+    $('camBtn').setAttribute('aria-label', t.enabled ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا');
+    $('camBtn').querySelector('span').textContent = t.enabled ? 'فيديو' : 'إيقاف';
+  }
 }
 async function flipCam() {
+  if (screenSharing || screenCaptureStarting) {
+    return toast('أوقف مشاركة الشاشة أولاً لتبديل الكاميرا.');
+  }
   if (flippingCamera || !pc || !localStream || !localStream.getVideoTracks().length) return;
   const old = localStream.getVideoTracks()[0];
   const oldFacing = facing;
@@ -1213,8 +1756,7 @@ async function flipCam() {
     await new Promise((resolve) => setTimeout(resolve, 200));
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: { exact: next },
-        ...HD_VIDEO_CONSTRAINTS,
+        ...getCameraVideoConstraints(cameraSettings, { exact: next }),
       },
       audio: false,
     });
@@ -1238,8 +1780,7 @@ async function flipCam() {
     try {
       const restoreStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: { exact: oldFacing },
-          ...HD_VIDEO_CONSTRAINTS,
+          ...getCameraVideoConstraints(cameraSettings, { exact: oldFacing }),
         },
         audio: false,
       });
@@ -1269,16 +1810,26 @@ function cleanup() {
   clearTimeout(callTimer);
   clearInterval(timerInt); timerInt = null;
   if (screenSharing && peer && socket.connected) socket.emit('screen-share-state', { to: peer, sharing: false });
-  if (screenNativeCapture && nativeScreenShare) {
-    nativeScreenShare.stopCapture().catch((e) => console.error('Could not stop Android screen capture:', e));
-  }
+  const activeScreenStream = screenStream;
+  const wasNativeScreenCapture = screenNativeCapture;
   screenShareGeneration++;
   screenCaptureStarting = false;
   $('shareBtn').disabled = false;
-  if (screenStream) screenStream.getTracks().forEach((track) => {
+  clearScreenShareState();
+  if (activeScreenStream) activeScreenStream.getTracks().forEach((track) => {
     if (track.readyState !== 'ended') track.stop();
   });
-  clearScreenShareState();
+  if (wasNativeScreenCapture && nativeScreenShare) {
+    nativeScreenShare.stopCapture().catch((e) => console.error('Could not stop Android screen capture:', e));
+  }
+  speakerEnabled = false;
+  $('speakerBtn').classList.remove('speaker-active');
+  $('speakerBtn').setAttribute('aria-pressed', 'false');
+  $('speakerBtn').setAttribute('aria-label', 'تشغيل مكبر الصوت');
+  $('speakerBtn').querySelector('span').textContent = 'السماعة';
+  if (isAndroidNative && nativeScreenShare) {
+    nativeScreenShare.resetAudioRoute().catch((e) => console.error('Could not reset Android call audio route:', e));
+  }
   if (pc) { pc.close(); pc = null; }
   if (localStream) { localStream.getTracks().forEach((t) => t.stop()); localStream = null; }
   remoteStream = null;
@@ -1287,7 +1838,10 @@ function cleanup() {
   $('remoteAudio').srcObject = null;
   $('local').srcObject = null;
   $('local').classList.remove('back');
-  $('callScreen').classList.remove('has-video', 'connected', 'ringing', 'sharing-remote');
+  $('callScreen').classList.remove('has-video', 'has-local-camera', 'connected', 'ringing', 'sharing-remote');
+  $('cameraSettings').classList.remove('active');
+  pendingCameraSettings = null;
+  cameraSettingsReturnFocus = null;
   $('stage').classList.remove('ringing');
   facing = 'user';
   makingOffer = false;
@@ -1295,9 +1849,19 @@ function cleanup() {
   isSettingRemoteAnswerPending = false;
   setBtn($('micBtn'), false, 'i-mic', 'i-micoff');
   setBtn($('camBtn'), false, 'i-video', 'i-vidoff');
+  $('micBtn').setAttribute('aria-pressed', 'false');
+  $('micBtn').querySelector('span').textContent = 'كتم';
+  $('camBtn').setAttribute('aria-pressed', 'false');
+  $('camBtn').setAttribute('aria-label', 'إيقاف الكاميرا');
+  $('camBtn').querySelector('span').textContent = 'فيديو';
+  $('connectionHint').textContent = '';
+  $('status').setAttribute('aria-live', 'polite');
+  $('callScreen').classList.remove('muted');
+  document.body.classList.remove('audio-only');
   peer = null; pendingOffer = null; pendingCandidates = [];
   if (me) show('homeScreen');
 }
+window.addEventListener('beforeunload', cleanup);
 </script>
 </body>
 </html>
