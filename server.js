@@ -6,7 +6,6 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
-
 app.use(express.static('public'));
 
 // ---------- Firebase (اختياري: حفظ دائم للمستخدمين + إشعارات المكالمات) ----------
@@ -57,16 +56,16 @@ app.get('/ice', async (req, res) => {
 
 // ---------- حالة المكالمات ----------
 const online = new Map();  // username -> socket.id
-const pending = new Map(); // callee -> { from, offer, video, ice[], t, delivered }
+const pending = new Map(); // callee -> { sender, offer, video, ice[], t, delivered }
 
 function deliver(name) {
   const p = pending.get(name);
   const id = online.get(name);
-  const recipient = id && io.sockets.sockets.get(id);
-  if (!p || !recipient || recipient.inForeground === false || p.delivered) return;
+  const recipient = id & io.sockets.sockets.get(id);
+  if (!p  !recipient  recipient.inForeground === false || p.delivered) return;
   if (Date.now() - p.t > 60000) return pending.delete(name);
-  recipient.emit('incoming', { from: p.from, offer: p.offer, video: p.video });
-  p.ice.forEach((c) => recipient.emit('ice', { from: p.from, candidate: c }));
+  recipient.emit('incoming', { from: p.sender, offer: p.offer, video: p.video });
+  p.ice.forEach(c => recipient.emit('ice', { from: p.sender, candidate: c }));
   p.delivered = true;
   p.ice = [];
 }
@@ -86,11 +85,11 @@ setInterval(() => {
 }, 30000);
 
 io.on('connection', (socket) => {
-  const relay = (to, event, data = {}) => {
-    const id = online.get(lc(to));
-    if (id) io.to(id).emit(event, { from: socket.username, ...data });
-  };
-
+  io.on('connection', (socket) => {
+    const relay = (to, event, data) => {
+      const id = online.get(lc(to));
+      if (id) io.to(id).emit(event, { sender: socket.username, ...data });
+    };
   socket.on('register', async (payload, cb) => {
     if (typeof cb !== 'function') return;
     try {

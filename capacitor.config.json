@@ -1,13 +1,9 @@
 {
   "appId": "com.b7r.calls",
-  "appName": "Calls",
+  "appName": "CallApp",
   "webDir": "public",
   "server": {
-    "url": "https://YOUR-APP.onrender.com"
-  },
-  "plugins": {
-    "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "alert"]
-    }
+    "url": "https://callapp-production-21c8.up.railway.app",
+    "cleartext": false
   }
 }
